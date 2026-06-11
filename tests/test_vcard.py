@@ -130,3 +130,29 @@ def test_roundtrip_photo_base64():
     raw = base64.b64encode(b"fake-jpeg-bytes").decode("ascii")
     vcf = contact_to_vcard(Contact(firstname="Anna", photo=raw), uid="p-3")
     assert vcard_to_contact(vcf).photo == raw
+
+
+from app.vcard import merge_contact_into_vcard
+
+
+def test_merge_replaces_managed_and_keeps_unmanaged():
+    new = Contact(
+        firstname="Anna",
+        lastname="Nagy",
+        emails=[TypedValue(type="work", value="uj@ceg.hu")],
+    )
+    merged = merge_contact_into_vcard(SAMPLE_VCF, new)
+    assert "X-CUSTOM:keep-me" in merged
+    assert "UID:abc-123" in merged
+    assert "FN:Anna Nagy" in merged
+    assert "uj@ceg.hu" in merged
+    assert "anna@ceg.hu" not in merged
+    assert "TEL" not in merged  # phones omitted from the body -> cleared
+
+
+def test_merge_result_is_valid_vcard():
+    merged = merge_contact_into_vcard(SAMPLE_VCF, Contact(firstname="Anna", lastname="Nagy"))
+    c = vcard_to_contact(merged)
+    assert c.uid == "abc-123"
+    assert c.firstname == "Anna"
+    assert c.lastname == "Nagy"

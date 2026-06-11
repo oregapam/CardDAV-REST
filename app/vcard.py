@@ -5,6 +5,9 @@ import vobject
 from app.models import Address, Contact, ContactOut, TypedValue
 
 
+MANAGED_PROPS = ("n", "fn", "email", "tel", "adr", "org", "title", "bday", "url", "note", "photo", "categories")
+
+
 def build_fn(contact: Contact) -> str:
     parts = [contact.prefix, contact.firstname, contact.middlename, contact.lastname, contact.suffix]
     return " ".join(p for p in parts if p)
@@ -134,3 +137,12 @@ def vcard_to_contact(vcf: str) -> ContactOut:
         photo=photo,
         categories=list(c["categories"][0].value) if "categories" in c else [],
     )
+
+
+def merge_contact_into_vcard(existing_vcf: str, contact: Contact) -> str:
+    card = vobject.readOne(existing_vcf)
+    for prop in MANAGED_PROPS:
+        if prop in card.contents:
+            del card.contents[prop]
+    _fill_card(card, contact)
+    return card.serialize()
