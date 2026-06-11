@@ -2,7 +2,7 @@ import base64
 
 import vobject
 
-from app.models import Contact
+from app.models import Address, Contact, ContactOut, TypedValue
 
 
 def build_fn(contact: Contact) -> str:
@@ -65,3 +65,72 @@ def _fill_card(card, contact: Contact) -> None:
             el.encoding_param = "b"
     if contact.categories:
         card.add("categories").value = list(contact.categories)
+
+
+def _first(value):
+    return value[0] if isinstance(value, list) else value
+
+
+def _type_of(el) -> str:
+    types = [t.lower() for t in el.params.get("TYPE", []) if t.lower() not in ("internet", "pref")]
+    return types[0] if types else "other"
+
+
+def vcard_to_contact(vcf: str) -> ContactOut:
+    card = vobject.readOne(vcf)
+    c = card.contents
+
+    def text(prop: str) -> str:
+        return c[prop][0].value if prop in c else ""
+
+    firstname = lastname = middlename = prefix = suffix = ""
+    if "n" in c:
+        name = c["n"][0].value
+        firstname = _first(name.given) or ""
+        lastname = _first(name.family) or ""
+        middlename = _first(name.additional) or ""
+        prefix = _first(name.prefix) or ""
+        suffix = _first(name.suffix) or ""
+
+    addresses = []
+    for el in c.get("adr", []):
+        a = el.value
+        addresses.append(
+            Address(
+                type=_type_of(el),
+                street=_first(a.street) or "",
+                city=_first(a.city) or "",
+                zip=_first(a.code) or "",
+                state=_first(a.region) or "",
+                country=_first(a.country) or "",
+            )
+        )
+
+    photo = ""
+    if "photo" in c:
+        value = c["photo"][0].value
+        photo = base64.b64encode(value).decode("ascii") if isinstance(value, bytes) else value
+
+    org = ""
+    if "org" in c:
+        org = _first(c["org"][0].value) or ""
+
+    return ContactOut(
+        uid=text("uid"),
+        fn=text("fn"),
+        firstname=firstname,
+        lastname=lastname,
+        middlename=middlename,
+        prefix=prefix,
+        suffix=suffix,
+        emails=[TypedValue(type=_type_of(el), value=el.value) for el in c.get("email", [])],
+        phones=[TypedValue(type=_type_of(el), value=el.value) for el in c.get("tel", [])],
+        addresses=addresses,
+        org=org,
+        title=text("title"),
+        birthday=text("bday"),
+        urls=[el.value for el in c.get("url", [])],
+        note=text("note"),
+        photo=photo,
+        categories=list(c["categories"][0].value) if "categories" in c else [],
+    )

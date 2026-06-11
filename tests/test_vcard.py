@@ -1,5 +1,6 @@
-from app.models import Address, Contact, TypedValue
+from app.models import Address, Contact, ContactOut, TypedValue
 from app.vcard import build_fn, contact_to_vcard
+from app.vcard import vcard_to_contact
 
 FULL_CONTACT = Contact(
     firstname="János",
@@ -69,3 +70,63 @@ def test_photo_base64_embedded():
     vcf = contact_to_vcard(c, uid="p-2")
     assert "PHOTO" in vcf
     assert base64.b64encode(raw).decode("ascii") in vcf.replace("\r\n ", "")
+
+
+SAMPLE_VCF = (
+    "BEGIN:VCARD\r\n"
+    "VERSION:3.0\r\n"
+    "UID:abc-123\r\n"
+    "FN:Anna Kis\r\n"
+    "N:Kis;Anna;;;\r\n"
+    "EMAIL;TYPE=INTERNET;TYPE=WORK:anna@ceg.hu\r\n"
+    "TEL;TYPE=CELL:+36301111111\r\n"
+    "X-CUSTOM:keep-me\r\n"
+    "END:VCARD\r\n"
+)
+
+
+def test_parse_basic_fields():
+    c = vcard_to_contact(SAMPLE_VCF)
+    assert isinstance(c, ContactOut)
+    assert c.uid == "abc-123"
+    assert c.fn == "Anna Kis"
+    assert c.firstname == "Anna"
+    assert c.lastname == "Kis"
+    assert c.emails == [TypedValue(type="work", value="anna@ceg.hu")]
+    assert c.phones == [TypedValue(type="cell", value="+36301111111")]
+
+
+def test_parse_tolerates_minimal_card():
+    vcf = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Csak Nev\r\nEND:VCARD\r\n"
+    c = vcard_to_contact(vcf)
+    assert c.fn == "Csak Nev"
+    assert c.uid == ""
+    assert c.emails == []
+
+
+def test_roundtrip_full_contact():
+    vcf = contact_to_vcard(FULL_CONTACT, uid="round-1")
+    c = vcard_to_contact(vcf)
+    assert c.uid == "round-1"
+    assert c.firstname == FULL_CONTACT.firstname
+    assert c.lastname == FULL_CONTACT.lastname
+    assert c.middlename == FULL_CONTACT.middlename
+    assert c.prefix == FULL_CONTACT.prefix
+    assert c.suffix == FULL_CONTACT.suffix
+    assert c.emails == FULL_CONTACT.emails
+    assert c.phones == FULL_CONTACT.phones
+    assert c.addresses == FULL_CONTACT.addresses
+    assert c.org == FULL_CONTACT.org
+    assert c.title == FULL_CONTACT.title
+    assert c.birthday == FULL_CONTACT.birthday
+    assert c.urls == FULL_CONTACT.urls
+    assert c.note == FULL_CONTACT.note
+    assert c.categories == FULL_CONTACT.categories
+
+
+def test_roundtrip_photo_base64():
+    import base64
+
+    raw = base64.b64encode(b"fake-jpeg-bytes").decode("ascii")
+    vcf = contact_to_vcard(Contact(firstname="Anna", photo=raw), uid="p-3")
+    assert vcard_to_contact(vcf).photo == raw
