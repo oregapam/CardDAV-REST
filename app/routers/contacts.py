@@ -42,3 +42,23 @@ async def search_contacts(
         matches=matches,
         searched_params=req.model_dump(exclude_none=True),
     )
+
+
+@router.post("", status_code=201)
+async def create_contact(body: ContactCreate, dav: CardDAVClient = Depends(get_dav)) -> dict:
+    if body.check_duplicates:
+        for email in body.emails:
+            results = await dav.search(email=email.value)
+            if results:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "duplicate contact",
+                        "matched_email": email.value,
+                        "existing_uid": results[0][0],
+                    },
+                )
+    uid = str(uuid.uuid4())
+    vcf = contact_to_vcard(body, uid)
+    await dav.create(uid, vcf)
+    return {"status": "success", "uid": uid, "filename": f"{uid}.vcf"}
