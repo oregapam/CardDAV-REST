@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.carddav import CardDAVClient, ConflictError, NotFoundError, UpstreamError
 from app.config import load_settings
+from app.routers.contacts import router as contacts_router
 
 
 def create_app() -> FastAPI:
@@ -21,6 +22,7 @@ def create_app() -> FastAPI:
             yield
 
     app = FastAPI(title="CardDAV-REST", lifespan=lifespan)
+    app.include_router(contacts_router)
 
     @app.middleware("http")
     async def require_api_key(request: Request, call_next):
