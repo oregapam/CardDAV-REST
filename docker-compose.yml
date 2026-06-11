@@ -1,0 +1,39 @@
+services:
+  baikal:
+    image: ckulka/baikal:nginx
+    restart: unless-stopped
+    ports:
+      - "8800:80"
+    volumes:
+      - baikal-config:/var/www/baikal/config
+      - baikal-data:/var/www/baikal/Specific
+    networks:
+      - dav
+
+  carddav-rest:
+    image: ${ADAPTER_IMAGE:-carddav-rest:latest}
+    restart: unless-stopped
+    depends_on:
+      - baikal
+    ports:
+      - "8000:8000"
+    environment:
+      BAIKAL_URL: http://baikal/dav.php
+      BAIKAL_USER: ${BAIKAL_USER}
+      BAIKAL_PASS: ${BAIKAL_PASS}
+      BAIKAL_ADDRESSBOOK: ${BAIKAL_ADDRESSBOOK:-default}
+      API_KEY: ${API_KEY}
+    networks:
+      - dav
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  dav:
+
+volumes:
+  baikal-config:
+  baikal-data:
