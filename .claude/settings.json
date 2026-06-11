@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(& \"c:\\\\Users\\\\mark\\\\Documents\\\\Projektek\\\\DAV\\\\gitea\\\\CardDAV-REST\\\\.venv\\\\Scripts\\\\python.exe\" -m pip install -r \"c:\\\\Users\\\\mark\\\\Documents\\\\Projektek\\\\DAV\\\\gitea\\\\CardDAV-REST\\\\requirements-dev.txt\")",
+      "Bash(\".venv/bin/python\" -c \"import sys; import platform; print\\(sys.version\\); print\\(platform.architecture\\(\\)\\); print\\(sys.prefix\\)\")"
+    ]
+  }
+}
