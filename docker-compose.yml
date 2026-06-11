@@ -9,12 +9,19 @@ services:
       - baikal-data:/var/www/baikal/Specific
     networks:
       - dav
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost/dav.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   carddav-rest:
     image: ${ADAPTER_IMAGE:-carddav-rest:latest}
     restart: unless-stopped
     depends_on:
-      - baikal
+      baikal:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:

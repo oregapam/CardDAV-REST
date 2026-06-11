@@ -131,6 +131,8 @@ class CardDAVClient:
         headers = {"Content-Type": "text/vcard; charset=utf-8"}
         if etag:
             headers["If-Match"] = etag
+        else:
+            logger.warning("Updating %s without ETag — concurrent-write protection not active", uid)
         await self._request("PUT", self._url(uid), content=vcf.encode("utf-8"), headers=headers)
 
     async def delete(self, uid: str) -> None:
