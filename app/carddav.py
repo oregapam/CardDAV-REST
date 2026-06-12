@@ -99,6 +99,21 @@ class CardDAVClient:
             raise UpstreamError(f"CardDAV server returned HTTP {resp.status_code}")
         return resp
 
+    async def list_all(self) -> list[tuple[str, str]]:
+        root = ET.Element(f"{_C}addressbook-query")
+        prop = ET.SubElement(root, f"{_D}prop")
+        ET.SubElement(prop, f"{_D}getetag")
+        ET.SubElement(prop, f"{_C}address-data")
+        ET.SubElement(root, f"{_C}filter", {"test": "anyof"})
+        body = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+        resp = await self._request(
+            "REPORT",
+            self._base,
+            content=body,
+            headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"},
+        )
+        return parse_multistatus(resp.text)
+
     async def search(
         self,
         email: str | None = None,

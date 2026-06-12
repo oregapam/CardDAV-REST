@@ -44,6 +44,17 @@ async def search_contacts(
     )
 
 
+@router.get("", response_model=list[ContactOut])
+async def list_contacts(dav: CardDAVClient = Depends(get_dav)) -> list[ContactOut]:
+    results = await dav.list_all()
+    contacts = []
+    for uid, vcf in results:
+        contact = vcard_to_contact(vcf)
+        contact.uid = uid
+        contacts.append(contact)
+    return contacts
+
+
 @router.post("", status_code=201)
 async def create_contact(body: ContactCreate, dav: CardDAVClient = Depends(get_dav)) -> dict:
     if body.check_duplicates:

@@ -15,6 +15,58 @@ EXISTING_VCF = (
 )
 
 
+MULTISTATUS_TWO = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav">'
+    "<d:response>"
+    "<d:href>/dav.php/addressbooks/testuser/default/abc-123.vcf</d:href>"
+    "<d:propstat><d:prop>"
+    "<d:getetag>\"v1\"</d:getetag>"
+    "<card:address-data>"
+    "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:abc-123\r\nFN:Anna Kis\r\nN:Kis;Anna;;;\r\nEND:VCARD\r\n"
+    "</card:address-data>"
+    "</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+    "</d:response>"
+    "<d:response>"
+    "<d:href>/dav.php/addressbooks/testuser/default/def-456.vcf</d:href>"
+    "<d:propstat><d:prop>"
+    "<d:getetag>\"v2\"</d:getetag>"
+    "<card:address-data>"
+    "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:def-456\r\nFN:Béla Nagy\r\nN:Nagy;Béla;;;\r\nEND:VCARD\r\n"
+    "</card:address-data>"
+    "</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+    "</d:response>"
+    "</d:multistatus>"
+)
+
+
+@respx.mock
+def test_list_all_contacts_returns_all(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/contacts")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 2
+    uids = {c["uid"] for c in body}
+    assert uids == {"abc-123", "def-456"}
+
+
+@respx.mock
+def test_list_all_contacts_empty(client):
+    empty = (
+        '<?xml version="1.0"?>'
+        '<d:multistatus xmlns:d="DAV:" xmlns:card="urn:ietf:params:xml:ns:carddav"/>'
+    )
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=empty)
+    )
+    resp = client.get("/api/contacts")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
 @respx.mock
 def test_get_contact(client):
     respx.get(BASE + "abc-123.vcf").mock(
