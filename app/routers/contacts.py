@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 
 from app.carddav import CardDAVClient
@@ -8,6 +8,7 @@ from app.models import (
     ContactCreate,
     ContactIn,
     ContactOut,
+    ContactsPage,
     SearchMatch,
     SearchRequest,
     SearchResponse,
@@ -51,18 +52,25 @@ async def search_contacts(
     )
 
 
-@router.get("", response_model=list[ContactOut])
+@router.get("", response_model=ContactsPage)
 async def list_contacts(
+    limit: int = Query(default=50, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
-) -> list[ContactOut]:
+) -> ContactsPage:
     results = await dav.list_all()
-    contacts = []
+    all_contacts = []
     for uid, vcf in results:
         contact = vcard_to_contact(vcf, name_format)
         contact.uid = uid
-        contacts.append(contact)
-    return contacts
+        all_contacts.append(contact)
+    return ContactsPage(
+        total=len(all_contacts),
+        limit=limit,
+        offset=offset,
+        items=all_contacts[offset : offset + limit],
+    )
 
 
 @router.post("", status_code=201)

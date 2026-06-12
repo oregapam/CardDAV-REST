@@ -53,6 +53,13 @@ class ContactOut(Contact):
     etag: str = ""
 
 
+class ContactsPage(BaseModel):
+    total: int
+    limit: int
+    offset: int
+    items: list[ContactOut]
+
+
 class SearchRequest(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None

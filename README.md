@@ -40,38 +40,53 @@ A missing or wrong key returns `401 Invalid or missing API key`.
 
 ### GET /api/contacts
 
-Returns every contact in the address book as a JSON array.
+Returns contacts from the address book with pagination support.
+
+| Parameter | Type | Default | Constraints | Description |
+|-----------|------|---------|-------------|-------------|
+| `limit` | integer | `50` | 1–1000 | Maximum number of contacts to return |
+| `offset` | integer | `0` | ≥ 0 | Number of contacts to skip |
 
 ```bash
-curl http://localhost:8000/api/contacts \
+# First page
+curl "http://localhost:8000/api/contacts?limit=50&offset=0" \
+  -H "X-API-Key: $API_KEY"
+
+# Second page
+curl "http://localhost:8000/api/contacts?limit=50&offset=50" \
   -H "X-API-Key: $API_KEY"
 ```
 
 **Response `200`**
 
 ```json
-[
-  {
-    "uid": "62352c20-a424-403a-8adb-00909bc483b8",
-    "fn": "Anna Kis",
-    "firstname": "Anna",
-    "lastname": "Kis",
-    "emails": [{ "type": "work", "value": "anna@ceg.hu" }],
-    "phones": [],
-    "addresses": [],
-    "org": "",
-    "title": "",
-    "birthday": "",
-    "urls": [],
-    "note": "",
-    "photo": "",
-    "categories": [],
-    "etag": ""
-  }
-]
+{
+  "total": 142,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "uid": "62352c20-a424-403a-8adb-00909bc483b8",
+      "fn": "Anna Kis",
+      "firstname": "Anna",
+      "lastname": "Kis",
+      "emails": [{ "type": "work", "value": "anna@ceg.hu" }],
+      "phones": [],
+      "addresses": [],
+      "org": "",
+      "title": "",
+      "birthday": "",
+      "urls": [],
+      "note": "",
+      "photo": "",
+      "categories": [],
+      "etag": ""
+    }
+  ]
+}
 ```
 
-Returns an empty array `[]` if the address book has no contacts.
+`total` is always the full count across all pages. `items` is empty when `offset` exceeds `total`.
 
 ---
 

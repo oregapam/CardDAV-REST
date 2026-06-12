@@ -48,8 +48,10 @@ def test_list_all_contacts_returns_all(client):
     resp = client.get("/api/contacts")
     assert resp.status_code == 200
     body = resp.json()
-    assert len(body) == 2
-    uids = {c["uid"] for c in body}
+    assert body["total"] == 2
+    assert body["limit"] == 50
+    assert body["offset"] == 0
+    uids = {c["uid"] for c in body["items"]}
     assert uids == {"abc-123", "def-456"}
 
 
@@ -64,7 +66,47 @@ def test_list_all_contacts_empty(client):
     )
     resp = client.get("/api/contacts")
     assert resp.status_code == 200
-    assert resp.json() == []
+    body = resp.json()
+    assert body == {"total": 0, "limit": 50, "offset": 0, "items": []}
+
+
+@respx.mock
+def test_list_contacts_pagination_limit(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/contacts?limit=1&offset=0")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    assert body["limit"] == 1
+    assert body["offset"] == 0
+    assert len(body["items"]) == 1
+
+
+@respx.mock
+def test_list_contacts_pagination_offset(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/contacts?limit=1&offset=1")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    assert len(body["items"]) == 1
+    assert body["items"][0]["uid"] == "def-456"
+
+
+@respx.mock
+def test_list_contacts_offset_beyond_total_returns_empty(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/contacts?offset=100")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    assert body["items"] == []
 
 
 @respx.mock
