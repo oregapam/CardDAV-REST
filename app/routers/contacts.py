@@ -26,7 +26,9 @@ def get_name_format(request: Request) -> str:
 
 @router.post("/search", response_model=SearchResponse)
 async def search_contacts(
-    req: SearchRequest, dav: CardDAVClient = Depends(get_dav)
+    req: SearchRequest,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
 ) -> SearchResponse:
     results = await dav.search(
         email=req.email,
@@ -36,7 +38,7 @@ async def search_contacts(
     )
     matches = []
     for uid, vcf in results:
-        contact = vcard_to_contact(vcf)
+        contact = vcard_to_contact(vcf, name_format)
         matches.append(
             SearchMatch(uid=uid, fn=contact.fn, emails=contact.emails, phones=contact.phones)
         )
@@ -49,11 +51,14 @@ async def search_contacts(
 
 
 @router.get("", response_model=list[ContactOut])
-async def list_contacts(dav: CardDAVClient = Depends(get_dav)) -> list[ContactOut]:
+async def list_contacts(
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
+) -> list[ContactOut]:
     results = await dav.list_all()
     contacts = []
     for uid, vcf in results:
-        contact = vcard_to_contact(vcf)
+        contact = vcard_to_contact(vcf, name_format)
         contact.uid = uid
         contacts.append(contact)
     return contacts
@@ -84,9 +89,13 @@ async def create_contact(
 
 
 @router.get("/{uid}", response_model=ContactOut)
-async def get_contact(uid: str, dav: CardDAVClient = Depends(get_dav)) -> ContactOut:
+async def get_contact(
+    uid: str,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
+) -> ContactOut:
     vcf, etag = await dav.get(uid)
-    contact = vcard_to_contact(vcf)
+    contact = vcard_to_contact(vcf, name_format)
     contact.uid = uid
     contact.etag = etag
     return contact

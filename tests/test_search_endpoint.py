@@ -17,7 +17,7 @@ def test_search_found(client):
     assert body["match_count"] == 1
     match = body["matches"][0]
     assert match["uid"] == "abc-123"
-    assert match["fn"] == "Teszt János"
+    assert match["fn"] == "János Teszt"
     assert match["emails"] == [{"type": "home", "value": "teszt@email.hu"}]
     assert match["phones"] == [{"type": "cell", "value": "+36301234567"}]
     assert body["searched_params"] == {"email": "teszt@email.hu", "match_condition": "allof"}
