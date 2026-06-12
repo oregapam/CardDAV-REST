@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 
 from app.carddav import CardDAVClient, ConflictError, NotFoundError, UpstreamError
@@ -15,7 +16,7 @@ def create_app() -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         async with httpx.AsyncClient(
-            auth=(settings.baikal_user, settings.baikal_pass),
+            auth=httpx.DigestAuth(settings.baikal_user, settings.baikal_pass),
             timeout=10.0,
         ) as http:
             app.state.carddav = CardDAVClient(settings, http)
@@ -24,9 +25,27 @@ def create_app() -> FastAPI:
     app = FastAPI(title="CardDAV-REST", lifespan=lifespan)
     app.include_router(contacts_router)
 
+    def custom_openapi():
+        if app.openapi_schema:
+            return app.openapi_schema
+        schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+        schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKeyAuth"] = {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-API-Key",
+        }
+        for path in schema.get("paths", {}).values():
+            for operation in path.values():
+                operation.setdefault("security", [{"ApiKeyAuth": []}])
+        app.openapi_schema = schema
+        return schema
+
+    app.openapi = custom_openapi
+
     @app.middleware("http")
     async def require_api_key(request: Request, call_next):
-        if request.url.path != "/health" and request.headers.get("X-API-Key") != settings.api_key:
+        public = {"/health", "/docs", "/redoc", "/openapi.json"}
+        if request.url.path not in public and request.headers.get("X-API-Key") != settings.api_key:
             return JSONResponse(status_code=401, content={"detail": "Invalid or missing API key"})
         return await call_next(request)
 
