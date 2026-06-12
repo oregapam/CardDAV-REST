@@ -17,7 +17,6 @@ def _set_env(monkeypatch, overrides=None, remove=()):
         monkeypatch.delenv(key, raising=False)
     for key, value in env.items():
         monkeypatch.setenv(key, value)
-    monkeypatch.delenv("BAIKAL_ADDRESSBOOK", raising=False)
 
 
 def test_load_settings_reads_env(monkeypatch):
@@ -27,13 +26,6 @@ def test_load_settings_reads_env(monkeypatch):
     assert s.baikal_user == "testuser"
     assert s.baikal_pass == "testpass"
     assert s.api_key == "test-key"
-    assert s.baikal_addressbook == "default"
-
-
-def test_addressbook_default_overridable(monkeypatch):
-    _set_env(monkeypatch)
-    monkeypatch.setenv("BAIKAL_ADDRESSBOOK", "munka")
-    assert load_settings().baikal_addressbook == "munka"
 
 
 def test_missing_required_var_fails_fast(monkeypatch):
@@ -42,10 +34,10 @@ def test_missing_required_var_fails_fast(monkeypatch):
         load_settings()
 
 
-def test_addressbook_url_handles_trailing_slash(monkeypatch):
+def test_principal_url_handles_trailing_slash(monkeypatch):
     _set_env(monkeypatch, overrides={"BAIKAL_URL": "http://baikal/dav.php/"})
     s = load_settings()
-    assert s.addressbook_url == "http://baikal/dav.php/addressbooks/testuser/default/"
+    assert s.principal_url == "http://baikal/dav.php/addressbooks/testuser/"
 
 
 def test_settings_dataclass_direct():
@@ -53,7 +45,6 @@ def test_settings_dataclass_direct():
         baikal_url="http://baikal/dav.php",
         baikal_user="u",
         baikal_pass="p",
-        baikal_addressbook="ab",
         api_key="k",
     )
-    assert s.addressbook_url == "http://baikal/dav.php/addressbooks/u/ab/"
+    assert s.principal_url == "http://baikal/dav.php/addressbooks/u/"

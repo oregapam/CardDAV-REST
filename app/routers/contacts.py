@@ -5,6 +5,7 @@ from fastapi.responses import Response
 
 from app.carddav import CardDAVClient
 from app.models import (
+    AddressbookInfo,
     ContactCreate,
     ContactIn,
     ContactOut,
@@ -15,7 +16,7 @@ from app.models import (
 )
 from app.vcard import contact_to_vcard, merge_contact_into_vcard, vcard_to_contact
 
-router = APIRouter(prefix="/api/contacts", tags=["contacts"])
+router = APIRouter(prefix="/api/addressbooks", tags=["contacts"])
 
 
 def get_dav(request: Request) -> CardDAVClient:
@@ -26,13 +27,21 @@ def get_name_format(request: Request) -> str:
     return request.app.state.name_format
 
 
-@router.post("/search", response_model=SearchResponse)
+@router.get("", response_model=list[AddressbookInfo])
+async def list_addressbooks(dav: CardDAVClient = Depends(get_dav)) -> list[AddressbookInfo]:
+    books = await dav.list_addressbooks()
+    return [AddressbookInfo(**b) for b in books]
+
+
+@router.post("/{book}/contacts/search", response_model=SearchResponse)
 async def search_contacts(
+    book: str,
     req: SearchRequest,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> SearchResponse:
     results = await dav.search(
+        book,
         email=req.email,
         phone=req.phone,
         name=req.name,
@@ -52,14 +61,15 @@ async def search_contacts(
     )
 
 
-@router.get("", response_model=ContactsPage)
+@router.get("/{book}/contacts", response_model=ContactsPage)
 async def list_contacts(
+    book: str,
     limit: int = Query(default=50, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> ContactsPage:
-    results = await dav.list_all()
+    results = await dav.list_all(book)
     all_contacts = []
     for uid, vcf in results:
         contact = vcard_to_contact(vcf, name_format)
@@ -76,15 +86,16 @@ async def list_contacts(
     )
 
 
-@router.post("", status_code=201)
+@router.post("/{book}/contacts", status_code=201)
 async def create_contact(
+    book: str,
     body: ContactCreate,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> dict:
     if body.check_duplicates:
         for email in body.emails:
-            results = await dav.search(email=email.value)
+            results = await dav.search(book, email=email.value)
             if results:
                 raise HTTPException(
                     status_code=409,
@@ -96,49 +107,69 @@ async def create_contact(
                 )
     uid = str(uuid.uuid4())
     vcf = contact_to_vcard(body, uid, name_format)
-    await dav.create(uid, vcf)
+    await dav.create(book, uid, vcf)
     return {"status": "success", "uid": uid, "filename": f"{uid}.vcf"}
 
 
-@router.get("/{uid}/vcard")
+@router.get("/{book}/contacts/{uid}/vcard")
 async def get_contact_vcard(
+    book: str,
     uid: str,
     dav: CardDAVClient = Depends(get_dav),
 ) -> Response:
-    vcf, etag = await dav.get(uid)
+    vcf, etag = await dav.get(book, uid)
     headers = {"Content-Disposition": f'attachment; filename="{uid}.vcf"'}
     if etag:
         headers["ETag"] = etag
     return Response(content=vcf, media_type="text/vcard; charset=utf-8", headers=headers)
 
 
-@router.get("/{uid}", response_model=ContactOut)
+@router.get("/{book}/contacts/{uid}", response_model=ContactOut)
 async def get_contact(
+    book: str,
     uid: str,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> ContactOut:
-    vcf, etag = await dav.get(uid)
+    vcf, etag = await dav.get(book, uid)
     contact = vcard_to_contact(vcf, name_format)
     contact.uid = uid
     contact.etag = etag
     return contact
 
 
-@router.put("/{uid}")
+@router.put("/{book}/contacts/{uid}")
 async def update_contact(
+    book: str,
     uid: str,
     body: ContactIn,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> dict:
-    existing_vcf, etag = await dav.get(uid)
+    existing_vcf, etag = await dav.get(book, uid)
     merged = merge_contact_into_vcard(existing_vcf, body, name_format)
-    await dav.update(uid, merged, etag)
+    await dav.update(book, uid, merged, etag)
     return {"status": "updated", "uid": uid}
 
 
-@router.delete("/{uid}")
-async def delete_contact(uid: str, dav: CardDAVClient = Depends(get_dav)) -> dict:
-    await dav.delete(uid)
+@router.post("/{book}/contacts/{uid}/move/{target_book}")
+async def move_contact(
+    book: str,
+    uid: str,
+    target_book: str,
+    dav: CardDAVClient = Depends(get_dav),
+) -> dict:
+    vcf, _ = await dav.get(book, uid)
+    await dav.create(target_book, uid, vcf)
+    await dav.delete(book, uid)
+    return {"status": "moved", "uid": uid, "from": book, "to": target_book}
+
+
+@router.delete("/{book}/contacts/{uid}")
+async def delete_contact(
+    book: str,
+    uid: str,
+    dav: CardDAVClient = Depends(get_dav),
+) -> dict:
+    await dav.delete(book, uid)
     return {"status": "deleted", "uid": uid}

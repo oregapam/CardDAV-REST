@@ -5,12 +5,13 @@ TEST_ENV = {
     "BAIKAL_URL": "http://baikal/dav.php",
     "BAIKAL_USER": "testuser",
     "BAIKAL_PASS": "testpass",
-    "BAIKAL_ADDRESSBOOK": "default",
     "API_KEY": "test-key",
     "NAME_FORMAT": "western",
 }
 
-BASE = "http://baikal/dav.php/addressbooks/testuser/default/"
+PRINCIPAL = "http://baikal/dav.php/addressbooks/testuser/"
+BOOK = "default"
+BASE = PRINCIPAL + BOOK + "/"  # http://baikal/dav.php/addressbooks/testuser/default/
 
 
 def _make_client(monkeypatch) -> TestClient:

@@ -13,14 +13,13 @@ class Settings:
     baikal_url: str
     baikal_user: str
     baikal_pass: str
-    baikal_addressbook: str
     api_key: str
     name_format: NameFormat = "western"
 
     @property
-    def addressbook_url(self) -> str:
+    def principal_url(self) -> str:
         base = self.baikal_url.rstrip("/")
-        return f"{base}/addressbooks/{self.baikal_user}/{self.baikal_addressbook}/"
+        return f"{base}/addressbooks/{self.baikal_user}/"
 
 
 def load_settings() -> Settings:
@@ -38,7 +37,6 @@ def load_settings() -> Settings:
         baikal_url=os.environ["BAIKAL_URL"],
         baikal_user=os.environ["BAIKAL_USER"],
         baikal_pass=os.environ["BAIKAL_PASS"],
-        baikal_addressbook=os.getenv("BAIKAL_ADDRESSBOOK", "default"),
         api_key=os.environ["API_KEY"],
         name_format=raw_format,  # type: ignore[arg-type]
     )

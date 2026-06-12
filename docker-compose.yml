@@ -28,7 +28,6 @@ services:
       BAIKAL_URL: http://baikal/dav.php
       BAIKAL_USER: ${BAIKAL_USER}
       BAIKAL_PASS: ${BAIKAL_PASS}
-      BAIKAL_ADDRESSBOOK: ${BAIKAL_ADDRESSBOOK:-default}
       API_KEY: ${API_KEY}
       NAME_FORMAT: ${NAME_FORMAT:-western}
     networks:

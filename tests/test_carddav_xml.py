@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from app.carddav import build_search_xml, parse_multistatus
+from app.carddav import build_search_xml, parse_addressbooks, parse_multistatus
 
 C = "{urn:ietf:params:xml:ns:carddav}"
 D = "{DAV:}"
@@ -71,3 +71,48 @@ def test_parse_multistatus_one_match():
 
 def test_parse_multistatus_empty():
     assert parse_multistatus(MULTISTATUS_EMPTY) == []
+
+
+PROPFIND_ADDRESSBOOKS = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:">'
+    "<d:response>"
+    "<d:href>/dav.php/addressbooks/testuser/</d:href>"
+    "<d:propstat><d:prop><d:displayname>testuser</d:displayname></d:prop>"
+    "<d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+    "</d:response>"
+    "<d:response>"
+    "<d:href>/dav.php/addressbooks/testuser/default/</d:href>"
+    "<d:propstat><d:prop><d:displayname>Default</d:displayname></d:prop>"
+    "<d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+    "</d:response>"
+    "<d:response>"
+    "<d:href>/dav.php/addressbooks/testuser/leads/</d:href>"
+    "<d:propstat><d:prop><d:displayname>Leads</d:displayname></d:prop>"
+    "<d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+    "</d:response>"
+    "</d:multistatus>"
+)
+
+PRINCIPAL_URL = "http://baikal/dav.php/addressbooks/testuser/"
+
+
+def test_parse_addressbooks_returns_books_without_principal():
+    results = parse_addressbooks(PROPFIND_ADDRESSBOOKS, PRINCIPAL_URL)
+    assert len(results) == 2
+    assert {"name": "default", "displayname": "Default"} in results
+    assert {"name": "leads", "displayname": "Leads"} in results
+
+
+def test_parse_addressbooks_empty_principal():
+    xml = (
+        '<?xml version="1.0"?>'
+        '<d:multistatus xmlns:d="DAV:">'
+        "<d:response>"
+        "<d:href>/dav.php/addressbooks/testuser/</d:href>"
+        "<d:propstat><d:prop><d:displayname>testuser</d:displayname></d:prop>"
+        "<d:status>HTTP/1.1 200 OK</d:status></d:propstat>"
+        "</d:response>"
+        "</d:multistatus>"
+    )
+    assert parse_addressbooks(xml, PRINCIPAL_URL) == []

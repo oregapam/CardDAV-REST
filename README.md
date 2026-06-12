@@ -4,6 +4,10 @@ FastAPI adapter that lets automation platforms (n8n) manage contacts on a
 Baïkal CardDAV server through a clean JSON REST API. Phones keep syncing
 natively over CardDAV; n8n never touches XML/WebDAV.
 
+Multiple address books are supported — each book is a separate namespace in the
+URL, so you can keep leads, customers, and personal contacts isolated while
+managing them all through one adapter instance.
+
 Design spec: `docs/superpowers/specs/2026-06-11-carddav-rest-adapter-design.md`
 
 ---
@@ -17,7 +21,7 @@ docker compose up -d
 ```
 
 First-time Baïkal setup: open http://localhost:8800, finish the wizard,
-create the user and address book referenced in `.env`.
+create the user and address books referenced in `.env`.
 
 Interactive API docs (Swagger UI): **http://localhost:8000/docs**
 
@@ -28,7 +32,7 @@ Interactive API docs (Swagger UI): **http://localhost:8000/docs**
 Every `/api/*` endpoint requires the `X-API-Key` header. `/health`, `/docs`, and `/redoc` are public.
 
 ```bash
-curl http://localhost:8000/api/contacts \
+curl http://localhost:8000/api/addressbooks \
   -H "X-API-Key: your-api-key"
 ```
 
@@ -38,7 +42,27 @@ A missing or wrong key returns `401 Invalid or missing API key`.
 
 ## API Reference
 
-### GET /api/contacts
+### GET /api/addressbooks
+
+Lists all address books available for the configured Baïkal user.
+
+```bash
+curl http://localhost:8000/api/addressbooks \
+  -H "X-API-Key: $API_KEY"
+```
+
+**Response `200`**
+
+```json
+[
+  { "name": "default", "displayname": "Default" },
+  { "name": "leads",   "displayname": "Leads" }
+]
+```
+
+---
+
+### GET /api/addressbooks/{book}/contacts
 
 Returns contacts from the address book with pagination support.
 
@@ -49,11 +73,11 @@ Returns contacts from the address book with pagination support.
 
 ```bash
 # First page
-curl "http://localhost:8000/api/contacts?limit=50&offset=0" \
+curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=0" \
   -H "X-API-Key: $API_KEY"
 
 # Second page
-curl "http://localhost:8000/api/contacts?limit=50&offset=50" \
+curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=50" \
   -H "X-API-Key: $API_KEY"
 ```
 
@@ -64,6 +88,7 @@ curl "http://localhost:8000/api/contacts?limit=50&offset=50" \
   "total": 142,
   "limit": 50,
   "offset": 0,
+  "warning": null,
   "items": [
     {
       "uid": "62352c20-a424-403a-8adb-00909bc483b8",
@@ -86,11 +111,12 @@ curl "http://localhost:8000/api/contacts?limit=50&offset=50" \
 }
 ```
 
-`total` is always the full count across all pages. `items` is empty when `offset` exceeds `total`.
+`total` is always the full count across all pages. `items` is empty when `offset` exceeds `total`,
+and `warning` contains a human-readable message in that case.
 
 ---
 
-### POST /api/contacts/search
+### POST /api/addressbooks/{book}/contacts/search
 
 Search for contacts by email, phone, and/or name. At least one filter is required.
 
@@ -100,8 +126,7 @@ Returns contacts that match **all** supplied filters simultaneously. Use this wh
 you know multiple attributes of the same person and want a precise hit.
 
 ```bash
-# Contact must have this exact email AND their name must contain "Anna"
-curl -X POST http://localhost:8000/api/contacts/search \
+curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -114,12 +139,10 @@ curl -X POST http://localhost:8000/api/contacts/search \
 #### `match_condition: "anyof"` — OR logic
 
 Returns contacts that match **at least one** of the supplied filters. Use this for
-deduplication checks before creating a contact: if you supply all known identifiers,
-you will catch any existing record that shares even one of them.
+deduplication checks before creating a contact.
 
 ```bash
-# Contact has this email OR this phone number OR their name contains "Anna"
-curl -X POST http://localhost:8000/api/contacts/search \
+curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -160,31 +183,26 @@ curl -X POST http://localhost:8000/api/contacts/search \
 }
 ```
 
-When there are no results, `exists` is `false`, `match_count` is `0`, and `matches` is `[]`.
-
 ---
 
-### POST /api/contacts
+### POST /api/addressbooks/{book}/contacts
 
 Creates a new contact. `firstname` or `lastname` (or both) is required.
 
 ```bash
-curl -X POST http://localhost:8000/api/contacts \
+curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "firstname": "Anna",
     "lastname": "Kis",
     "emails": [
-      { "type": "work", "value": "anna@ceg.hu" },
-      { "type": "home", "value": "anna@gmail.com" }
+      { "type": "work", "value": "anna@ceg.hu" }
     ],
     "phones": [
       { "type": "mobile", "value": "+36301234567" }
     ],
     "org": "ACME Kft.",
-    "title": "Értékesítési vezető",
-    "birthday": "1990-05-14",
     "note": "VIP ügyfél",
     "categories": ["leads", "vip"]
   }'
@@ -204,15 +222,10 @@ curl -X POST http://localhost:8000/api/contacts \
 
 When set to `true`, the adapter searches for an existing contact with the same email
 address **before** creating. If a match is found, it returns `409 Conflict` instead
-of creating a duplicate. This is the recommended setting in any automated workflow
-(e.g. n8n form submissions) where the same person may be submitted more than once.
-
-Without this flag, every call creates a new record regardless of whether an identical
-contact already exists. Two contacts with the same email address are then
-indistinguishable — resolving them later requires manual cleanup.
+of creating a duplicate.
 
 ```bash
-curl -X POST http://localhost:8000/api/contacts \
+curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -234,9 +247,6 @@ curl -X POST http://localhost:8000/api/contacts \
   }
 }
 ```
-
-Use the returned `existing_uid` to fetch or update the existing record instead of
-creating a new one.
 
 #### Full contact fields reference
 
@@ -261,28 +271,29 @@ creating a new one.
 
 ---
 
-### GET /api/contacts/{uid}/vcard
+### GET /api/addressbooks/{book}/contacts/{uid}/vcard
 
-Downloads the raw vCard file for a contact. Useful when another tool (e.g. n8n HTTP node) needs the original `.vcf` content directly.
+Downloads the raw vCard file for a contact.
 
 ```bash
-curl http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8/vcard \
+curl http://localhost:8000/api/addressbooks/leads/contacts/62352c20.../vcard \
   -H "X-API-Key: $API_KEY" \
   -o contact.vcf
 ```
 
-**Response `200`** — `text/vcard; charset=utf-8` body with the raw vCard text. Includes `ETag` and `Content-Disposition: attachment; filename="<uid>.vcf"` headers.
+**Response `200`** — `text/vcard; charset=utf-8` body. Includes `ETag` and
+`Content-Disposition: attachment; filename="<uid>.vcf"` headers.
 
 **Response `404`** if the UID does not exist.
 
 ---
 
-### GET /api/contacts/{uid}
+### GET /api/addressbooks/{book}/contacts/{uid}
 
 Fetches a single contact by UID.
 
 ```bash
-curl http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8 \
+curl http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
   -H "X-API-Key: $API_KEY"
 ```
 
@@ -292,19 +303,14 @@ curl http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8 \
 
 ---
 
-### PUT /api/contacts/{uid}
+### PUT /api/addressbooks/{book}/contacts/{uid}
 
-Updates an existing contact. The request body contains only the fields you want to
-change — all other fields keep their current values. Fields managed by the adapter
-(name, email, phone, etc.) are replaced; unmanaged fields in the vCard (e.g. `X-*`
-custom properties) are preserved untouched.
-
-The adapter fetches the current ETag before writing and sends `If-Match` to prevent
-lost updates if the contact was modified concurrently (e.g. by a phone sync).
+Updates an existing contact. All managed fields are replaced; unmanaged vCard
+properties (e.g. `X-*` custom fields) are preserved. The adapter fetches the
+current ETag before writing and sends `If-Match` to prevent lost updates.
 
 ```bash
-# Change only the last name; everything else stays the same
-curl -X PUT http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8 \
+curl -X PUT http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -313,26 +319,17 @@ curl -X PUT http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc48
   }'
 ```
 
-**Response `200`**
-
-```json
-{
-  "status": "updated",
-  "uid": "62352c20-a424-403a-8adb-00909bc483b8"
-}
-```
-
-**Response `404`** if the UID does not exist.  
-**Response `409`** if the contact was modified between your GET and PUT (ETag mismatch).
+**Response `200`** `{"status": "updated", "uid": "..."}` · **`404`** not found · **`409`** ETag mismatch.
 
 ---
 
-### DELETE /api/contacts/{uid}
+### POST /api/addressbooks/{book}/contacts/{uid}/move/{target_book}
 
-Deletes a contact permanently.
+Moves a contact from one address book to another. The UID is preserved.
 
 ```bash
-curl -X DELETE http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8 \
+curl -X POST \
+  "http://localhost:8000/api/addressbooks/leads/contacts/62352c20-.../move/customers" \
   -H "X-API-Key: $API_KEY"
 ```
 
@@ -340,12 +337,29 @@ curl -X DELETE http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909b
 
 ```json
 {
-  "status": "deleted",
-  "uid": "62352c20-a424-403a-8adb-00909bc483b8"
+  "status": "moved",
+  "uid": "62352c20-...",
+  "from": "leads",
+  "to": "customers"
 }
 ```
 
-**Response `404`** if the UID does not exist.
+**Response `404`** if the source contact does not exist.  
+**Response `409`** if a contact with the same UID already exists in the target book.
+
+---
+
+### DELETE /api/addressbooks/{book}/contacts/{uid}
+
+Deletes a contact permanently.
+
+```bash
+curl -X DELETE \
+  http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
+  -H "X-API-Key: $API_KEY"
+```
+
+**Response `200`** `{"status": "deleted", "uid": "..."}` · **`404`** not found.
 
 ---
 
@@ -357,11 +371,7 @@ Health check, no API key required.
 curl http://localhost:8000/health
 ```
 
-**Response `200`**
-
-```json
-{ "status": "ok" }
-```
+**Response `200`** `{"status": "ok"}`
 
 ---
 
@@ -371,7 +381,7 @@ curl http://localhost:8000/health
 |--------|---------|
 | `401` | Missing or invalid `X-API-Key` |
 | `404` | Contact UID not found |
-| `409` | Duplicate contact (create) or ETag mismatch (update) |
+| `409` | Duplicate contact (create), ETag mismatch (update), or UID collision in target book (move) |
 | `422` | Validation error (missing required fields, no search filter, etc.) |
 | `502` | CardDAV server unreachable or rejected credentials |
 
@@ -394,7 +404,6 @@ python -m pytest tests -v
 | `BAIKAL_URL` | yes | — | e.g. `http://baikal/dav.php` (internal Docker network) |
 | `BAIKAL_USER` | yes | — | Baïkal user the adapter authenticates as |
 | `BAIKAL_PASS` | yes | — | Baïkal password |
-| `BAIKAL_ADDRESSBOOK` | no | `default` | Address book id |
 | `API_KEY` | yes | — | Key clients send in `X-API-Key` |
 | `NAME_FORMAT` | no | `western` | Format of the vCard FN field — see below |
 
@@ -408,4 +417,5 @@ Controls how the full name (`fn`) field is assembled from the individual name pa
 | `eastern` | Lastname Firstname | `Kis Anna` |
 | `eastern_full` | Prefix Lastname Firstname Suffix | `Dr. Kis Anna PhD` |
 
-The structured name parts (`firstname`, `lastname`, etc.) are always stored separately and are unaffected by this setting. Only the display name (`fn`) changes, which is what phones and other CardDAV clients show.
+The structured name parts (`firstname`, `lastname`, etc.) are always stored separately
+and are unaffected by this setting. Only the display name (`fn`) changes.

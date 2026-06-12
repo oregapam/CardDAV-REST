@@ -53,6 +53,11 @@ class ContactOut(Contact):
     etag: str = ""
 
 
+class AddressbookInfo(BaseModel):
+    name: str
+    displayname: str
+
+
 class ContactsPage(BaseModel):
     total: int
     limit: int

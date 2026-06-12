@@ -10,7 +10,9 @@ def test_search_found(client):
     respx.route(method="REPORT", url=BASE).mock(
         return_value=httpx.Response(207, text=MULTISTATUS_ONE)
     )
-    resp = client.post("/api/contacts/search", json={"email": "teszt@email.hu"})
+    resp = client.post(
+        "/api/addressbooks/default/contacts/search", json={"email": "teszt@email.hu"}
+    )
     assert resp.status_code == 200
     body = resp.json()
     assert body["exists"] is True
@@ -29,7 +31,7 @@ def test_search_not_found(client):
         return_value=httpx.Response(207, text=MULTISTATUS_EMPTY)
     )
     resp = client.post(
-        "/api/contacts/search",
+        "/api/addressbooks/default/contacts/search",
         json={"name": "Senki", "phone": "+361", "match_condition": "anyof"},
     )
     assert resp.status_code == 200
@@ -43,12 +45,12 @@ def test_search_not_found(client):
 
 
 def test_search_without_filters_is_422(client):
-    resp = client.post("/api/contacts/search", json={})
+    resp = client.post("/api/addressbooks/default/contacts/search", json={})
     assert resp.status_code == 422
 
 
 @respx.mock
 def test_search_baikal_down_is_502(client):
     respx.route(method="REPORT", url=BASE).mock(side_effect=httpx.ConnectError("boom"))
-    resp = client.post("/api/contacts/search", json={"email": "x@y.hu"})
+    resp = client.post("/api/addressbooks/default/contacts/search", json={"email": "x@y.hu"})
     assert resp.status_code == 502

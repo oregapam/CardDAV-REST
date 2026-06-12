@@ -13,7 +13,7 @@ VCF_URL = re.compile(re.escape(BASE) + r"[0-9a-f-]+\.vcf")
 def test_create_contact(client):
     route = respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(201))
     resp = client.post(
-        "/api/contacts",
+        "/api/addressbooks/default/contacts",
         json={
             "firstname": "Anna",
             "lastname": "Kis",
@@ -34,7 +34,9 @@ def test_create_contact(client):
 
 
 def test_create_without_name_is_422(client):
-    resp = client.post("/api/contacts", json={"emails": [{"value": "a@b.hu"}]})
+    resp = client.post(
+        "/api/addressbooks/default/contacts", json={"emails": [{"value": "a@b.hu"}]}
+    )
     assert resp.status_code == 422
 
 
@@ -44,7 +46,7 @@ def test_create_with_duplicate_check_conflict(client):
         return_value=httpx.Response(207, text=MULTISTATUS_ONE)
     )
     resp = client.post(
-        "/api/contacts",
+        "/api/addressbooks/default/contacts",
         json={
             "firstname": "Teszt",
             "lastname": "János",
@@ -63,7 +65,7 @@ def test_create_with_duplicate_check_no_match_creates(client):
     )
     respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(201))
     resp = client.post(
-        "/api/contacts",
+        "/api/addressbooks/default/contacts",
         json={
             "firstname": "Anna",
             "lastname": "Kis",
@@ -77,5 +79,7 @@ def test_create_with_duplicate_check_no_match_creates(client):
 @respx.mock
 def test_create_uid_collision_is_409(client):
     respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(412))
-    resp = client.post("/api/contacts", json={"firstname": "Anna", "lastname": "Kis"})
+    resp = client.post(
+        "/api/addressbooks/default/contacts", json={"firstname": "Anna", "lastname": "Kis"}
+    )
     assert resp.status_code == 409

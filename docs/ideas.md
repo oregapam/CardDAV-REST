@@ -13,7 +13,7 @@
 
 ## Műveletek
 
-- [ ] **`POST /api/contacts/{uid}/merge/{other_uid}`** — két duplikált kontakt összevonása (megtartja az egyiket, törli a másikat)
+- [ ] **`POST /api/addressbooks/{book}/contacts/{uid}/merge/{other_uid}`** — két duplikált kontakt összevonása (megtartja az egyiket, törli a másikat)
 - [ ] **`PATCH /api/contacts/{uid}`** — részleges frissítés csak a megadott mezőkre, szemben a PUT teljes felülírásával
 
 ## Megfigyelhetőség
