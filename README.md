@@ -365,3 +365,16 @@ python -m pytest tests -v
 | `BAIKAL_PASS` | yes | — | Baïkal password |
 | `BAIKAL_ADDRESSBOOK` | no | `default` | Address book id |
 | `API_KEY` | yes | — | Key clients send in `X-API-Key` |
+| `NAME_FORMAT` | no | `western` | Format of the vCard FN field — see below |
+
+### NAME_FORMAT options
+
+Controls how the full name (`fn`) field is assembled from the individual name parts.
+
+| Value | Format | Example |
+|-------|--------|---------|
+| `western` | Prefix Firstname Middlename Lastname Suffix | `Dr. Anna Maria Kis PhD` |
+| `eastern` | Lastname Firstname | `Kis Anna` |
+| `eastern_full` | Prefix Lastname Firstname Suffix | `Dr. Kis Anna PhD` |
+
+The structured name parts (`firstname`, `lastname`, etc.) are always stored separately and are unaffected by this setting. Only the display name (`fn`) changes, which is what phones and other CardDAV clients show.
