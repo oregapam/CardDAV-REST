@@ -20,6 +20,10 @@ def get_dav(request: Request) -> CardDAVClient:
     return request.app.state.carddav
 
 
+def get_name_format(request: Request) -> str:
+    return request.app.state.name_format
+
+
 @router.post("/search", response_model=SearchResponse)
 async def search_contacts(
     req: SearchRequest, dav: CardDAVClient = Depends(get_dav)
@@ -56,7 +60,11 @@ async def list_contacts(dav: CardDAVClient = Depends(get_dav)) -> list[ContactOu
 
 
 @router.post("", status_code=201)
-async def create_contact(body: ContactCreate, dav: CardDAVClient = Depends(get_dav)) -> dict:
+async def create_contact(
+    body: ContactCreate,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
+) -> dict:
     if body.check_duplicates:
         for email in body.emails:
             results = await dav.search(email=email.value)
@@ -70,7 +78,7 @@ async def create_contact(body: ContactCreate, dav: CardDAVClient = Depends(get_d
                     },
                 )
     uid = str(uuid.uuid4())
-    vcf = contact_to_vcard(body, uid)
+    vcf = contact_to_vcard(body, uid, name_format)
     await dav.create(uid, vcf)
     return {"status": "success", "uid": uid, "filename": f"{uid}.vcf"}
 
@@ -86,10 +94,13 @@ async def get_contact(uid: str, dav: CardDAVClient = Depends(get_dav)) -> Contac
 
 @router.put("/{uid}")
 async def update_contact(
-    uid: str, body: ContactIn, dav: CardDAVClient = Depends(get_dav)
+    uid: str,
+    body: ContactIn,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
 ) -> dict:
     existing_vcf, etag = await dav.get(uid)
-    merged = merge_contact_into_vcard(existing_vcf, body)
+    merged = merge_contact_into_vcard(existing_vcf, body, name_format)
     await dav.update(uid, merged, etag)
     return {"status": "updated", "uid": uid}
 

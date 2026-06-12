@@ -1,7 +1,11 @@
 import os
 from dataclasses import dataclass
+from typing import Literal
 
 _REQUIRED_VARS = ("BAIKAL_URL", "BAIKAL_USER", "BAIKAL_PASS", "API_KEY")
+
+NameFormat = Literal["western", "eastern", "eastern_full"]
+_VALID_NAME_FORMATS: tuple[str, ...] = ("western", "eastern", "eastern_full")
 
 
 @dataclass(frozen=True)
@@ -11,6 +15,7 @@ class Settings:
     baikal_pass: str
     baikal_addressbook: str
     api_key: str
+    name_format: NameFormat = "western"
 
     @property
     def addressbook_url(self) -> str:
@@ -24,10 +29,16 @@ def load_settings() -> Settings:
         raise RuntimeError(
             f"Missing required environment variables: {', '.join(missing)}"
         )
+    raw_format = os.getenv("NAME_FORMAT", "western")
+    if raw_format not in _VALID_NAME_FORMATS:
+        raise RuntimeError(
+            f"Invalid NAME_FORMAT '{raw_format}'. Must be one of: {', '.join(_VALID_NAME_FORMATS)}"
+        )
     return Settings(
         baikal_url=os.environ["BAIKAL_URL"],
         baikal_user=os.environ["BAIKAL_USER"],
         baikal_pass=os.environ["BAIKAL_PASS"],
         baikal_addressbook=os.getenv("BAIKAL_ADDRESSBOOK", "default"),
         api_key=os.environ["API_KEY"],
+        name_format=raw_format,  # type: ignore[arg-type]
     )

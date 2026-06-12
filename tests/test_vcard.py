@@ -41,6 +41,29 @@ def test_build_fn_order():
     assert build_fn(Contact(lastname="Kis")) == "Kis"
 
 
+def test_build_fn_eastern():
+    c = Contact(prefix="Dr.", firstname="János", middlename="Béla", lastname="Teszt", suffix="PhD")
+    assert build_fn(c, "eastern") == "Teszt János"
+
+
+def test_build_fn_eastern_full():
+    c = Contact(prefix="Dr.", firstname="János", middlename="Béla", lastname="Teszt", suffix="PhD")
+    assert build_fn(c, "eastern_full") == "Dr. Teszt János PhD"
+
+
+def test_contact_to_vcard_eastern_fn():
+    c = Contact(firstname="Anna", lastname="Kis")
+    vcf = contact_to_vcard(c, uid="e-1", name_format="eastern")
+    assert "FN:Kis Anna" in vcf
+    assert "N:Kis;Anna;;;" in vcf
+
+
+def test_contact_to_vcard_eastern_full_fn():
+    c = Contact(prefix="Dr.", firstname="Anna", lastname="Kis", suffix="PhD")
+    vcf = contact_to_vcard(c, uid="e-2", name_format="eastern_full")
+    assert "FN:Dr. Kis Anna PhD" in vcf
+
+
 def test_full_contact_serializes_all_fields():
     vcf = contact_to_vcard(FULL_CONTACT, uid="full-1")
     assert "EMAIL;TYPE=WORK:janos@ceg.hu" in vcf

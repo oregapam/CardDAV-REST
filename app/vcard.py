@@ -4,23 +4,29 @@ import vobject
 
 from app.models import Address, Contact, ContactOut, TypedValue
 
+NAME_FORMAT_DEFAULT = "western"
 
 MANAGED_PROPS = ("n", "fn", "email", "tel", "adr", "org", "title", "bday", "url", "note", "photo", "categories")
 
 
-def build_fn(contact: Contact) -> str:
-    parts = [contact.prefix, contact.firstname, contact.middlename, contact.lastname, contact.suffix]
+def build_fn(contact: Contact, name_format: str = NAME_FORMAT_DEFAULT) -> str:
+    if name_format == "eastern":
+        parts = [contact.lastname, contact.firstname]
+    elif name_format == "eastern_full":
+        parts = [contact.prefix, contact.lastname, contact.firstname, contact.suffix]
+    else:  # western
+        parts = [contact.prefix, contact.firstname, contact.middlename, contact.lastname, contact.suffix]
     return " ".join(p for p in parts if p)
 
 
-def contact_to_vcard(contact: Contact, uid: str) -> str:
+def contact_to_vcard(contact: Contact, uid: str, name_format: str = NAME_FORMAT_DEFAULT) -> str:
     card = vobject.vCard()
     card.add("uid").value = uid
-    _fill_card(card, contact)
+    _fill_card(card, contact, name_format)
     return card.serialize()
 
 
-def _fill_card(card, contact: Contact) -> None:
+def _fill_card(card, contact: Contact, name_format: str = NAME_FORMAT_DEFAULT) -> None:
     n = card.add("n")
     n.value = vobject.vcard.Name(
         family=contact.lastname,
@@ -29,7 +35,7 @@ def _fill_card(card, contact: Contact) -> None:
         prefix=contact.prefix,
         suffix=contact.suffix,
     )
-    card.add("fn").value = build_fn(contact)
+    card.add("fn").value = build_fn(contact, name_format)
     for email in contact.emails:
         el = card.add("email")
         el.value = email.value
@@ -139,10 +145,10 @@ def vcard_to_contact(vcf: str) -> ContactOut:
     )
 
 
-def merge_contact_into_vcard(existing_vcf: str, contact: Contact) -> str:
+def merge_contact_into_vcard(existing_vcf: str, contact: Contact, name_format: str = NAME_FORMAT_DEFAULT) -> str:
     card = vobject.readOne(existing_vcf)
     for prop in MANAGED_PROPS:
         if prop in card.contents:
             del card.contents[prop]
-    _fill_card(card, contact)
+    _fill_card(card, contact, name_format)
     return card.serialize()

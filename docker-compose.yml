@@ -30,6 +30,7 @@ services:
       BAIKAL_PASS: ${BAIKAL_PASS}
       BAIKAL_ADDRESSBOOK: ${BAIKAL_ADDRESSBOOK:-default}
       API_KEY: ${API_KEY}
+      NAME_FORMAT: ${NAME_FORMAT:-western}
     networks:
       - dav
     healthcheck:

@@ -7,6 +7,7 @@ TEST_ENV = {
     "BAIKAL_PASS": "testpass",
     "BAIKAL_ADDRESSBOOK": "default",
     "API_KEY": "test-key",
+    "NAME_FORMAT": "western",
 }
 
 BASE = "http://baikal/dav.php/addressbooks/testuser/default/"
