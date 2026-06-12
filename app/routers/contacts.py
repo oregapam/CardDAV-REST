@@ -66,10 +66,11 @@ async def list_contacts(
     book: str,
     limit: int = Query(default=50, ge=1, le=1000),
     offset: int = Query(default=0, ge=0),
+    q: str | None = Query(default=None, description="Quick search across name, email, and phone"),
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
 ) -> ContactsPage:
-    results = await dav.list_all(book)
+    results = await dav.quick_search(book, q) if q else await dav.list_all(book)
     all_contacts = []
     for uid, vcf in results:
         contact = vcard_to_contact(vcf, name_format)

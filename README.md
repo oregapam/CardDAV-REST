@@ -70,6 +70,7 @@ Returns contacts from the address book with pagination support.
 |-----------|------|---------|-------------|-------------|
 | `limit` | integer | `50` | 1–1000 | Maximum number of contacts to return |
 | `offset` | integer | `0` | ≥ 0 | Number of contacts to skip |
+| `q` | string | — | — | Quick search: matches against name, email, and phone (contains, case-insensitive, OR logic) |
 
 ```bash
 # First page
@@ -78,6 +79,10 @@ curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=0" \
 
 # Second page
 curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=50" \
+  -H "X-API-Key: $API_KEY"
+
+# Quick search — returns all contacts where name, email, or phone contains "anna"
+curl "http://localhost:8000/api/addressbooks/leads/contacts?q=anna" \
   -H "X-API-Key: $API_KEY"
 ```
 

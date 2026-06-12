@@ -4,7 +4,7 @@
 
 - [x] **`GET /api/contacts/{uid}/vcard`** — nyers vCard letöltés, ha n8n-ből vagy más eszközből kell az eredeti fájl
 - [x] **Pagination a listázáshoz** — `GET /api/contacts?limit=50&offset=0`, ha nagy a névjegykönyv
-- [ ] **Gyors keresés query param-mal** — `GET /api/contacts?q=anna` a külön POST search endpoint helyett, egyszerűbb esetekre
+- [x] **Gyors keresés query param-mal** — `GET /api/addressbooks/{book}/contacts?q=anna` a külön POST search endpoint helyett, egyszerűbb esetekre
 
 ## Adatminőség
 

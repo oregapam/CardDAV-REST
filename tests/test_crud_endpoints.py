@@ -152,6 +152,30 @@ def test_list_contacts_no_warning_when_offset_in_range(client):
 
 
 @respx.mock
+def test_list_contacts_q_uses_report(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/addressbooks/default/contacts?q=anna")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    assert body["warning"] is None
+
+
+@respx.mock
+def test_list_contacts_q_body_contains_anyof_contains(client):
+    route = respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    client.get("/api/addressbooks/default/contacts?q=anna")
+    xml = route.calls.last.request.content.decode("utf-8")
+    assert 'test="anyof"' in xml
+    assert 'match-type="contains"' in xml
+    assert "anna" in xml
+
+
+@respx.mock
 def test_get_contact_vcard_returns_raw_vcf(client):
     respx.get(BASE + "abc-123.vcf").mock(
         return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})

@@ -42,6 +42,25 @@ def build_search_xml(
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def build_quick_search_xml(q: str) -> bytes:
+    root = ET.Element(f"{_C}addressbook-query")
+    prop = ET.SubElement(root, f"{_D}prop")
+    ET.SubElement(prop, f"{_D}getetag")
+    ET.SubElement(prop, f"{_C}address-data")
+    filt = ET.SubElement(root, f"{_C}filter", {"test": "anyof"})
+
+    for prop_name in ("FN", "EMAIL", "TEL"):
+        pf = ET.SubElement(filt, f"{_C}prop-filter", {"name": prop_name})
+        tm = ET.SubElement(
+            pf,
+            f"{_C}text-match",
+            {"collation": "i;unicode-casemap", "match-type": "contains"},
+        )
+        tm.text = q
+
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
+
+
 def parse_multistatus(xml_text: str) -> list[tuple[str, str]]:
     root = ET.fromstring(xml_text)
     results: list[tuple[str, str]] = []
@@ -142,6 +161,16 @@ class CardDAVClient:
         ET.SubElement(prop, f"{_C}address-data")
         ET.SubElement(root, f"{_C}filter", {"test": "anyof"})
         body = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+        resp = await self._request(
+            "REPORT",
+            self._book_url(book),
+            content=body,
+            headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"},
+        )
+        return parse_multistatus(resp.text)
+
+    async def quick_search(self, book: str, q: str) -> list[tuple[str, str]]:
+        body = build_quick_search_xml(q)
         resp = await self._request(
             "REPORT",
             self._book_url(book),
