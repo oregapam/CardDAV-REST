@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 
 from app.carddav import CardDAVClient
 from app.models import (
@@ -86,6 +87,18 @@ async def create_contact(
     vcf = contact_to_vcard(body, uid, name_format)
     await dav.create(uid, vcf)
     return {"status": "success", "uid": uid, "filename": f"{uid}.vcf"}
+
+
+@router.get("/{uid}/vcard")
+async def get_contact_vcard(
+    uid: str,
+    dav: CardDAVClient = Depends(get_dav),
+) -> Response:
+    vcf, etag = await dav.get(uid)
+    headers = {"Content-Disposition": f'attachment; filename="{uid}.vcf"'}
+    if etag:
+        headers["ETag"] = etag
+    return Response(content=vcf, media_type="text/vcard; charset=utf-8", headers=headers)
 
 
 @router.get("/{uid}", response_model=ContactOut)

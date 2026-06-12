@@ -68,6 +68,25 @@ def test_list_all_contacts_empty(client):
 
 
 @respx.mock
+def test_get_contact_vcard_returns_raw_vcf(client):
+    respx.get(BASE + "abc-123.vcf").mock(
+        return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})
+    )
+    resp = client.get("/api/contacts/abc-123/vcard")
+    assert resp.status_code == 200
+    assert "text/vcard" in resp.headers["content-type"]
+    assert resp.text == EXISTING_VCF
+    assert resp.headers["etag"] == '"v1"'
+    assert resp.headers["content-disposition"] == 'attachment; filename="abc-123.vcf"'
+
+
+@respx.mock
+def test_get_contact_vcard_missing_is_404(client):
+    respx.get(BASE + "nincs.vcf").mock(return_value=httpx.Response(404))
+    assert client.get("/api/contacts/nincs/vcard").status_code == 404
+
+
+@respx.mock
 def test_get_contact(client):
     respx.get(BASE + "abc-123.vcf").mock(
         return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})

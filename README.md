@@ -246,6 +246,22 @@ creating a new one.
 
 ---
 
+### GET /api/contacts/{uid}/vcard
+
+Downloads the raw vCard file for a contact. Useful when another tool (e.g. n8n HTTP node) needs the original `.vcf` content directly.
+
+```bash
+curl http://localhost:8000/api/contacts/62352c20-a424-403a-8adb-00909bc483b8/vcard \
+  -H "X-API-Key: $API_KEY" \
+  -o contact.vcf
+```
+
+**Response `200`** — `text/vcard; charset=utf-8` body with the raw vCard text. Includes `ETag` and `Content-Disposition: attachment; filename="<uid>.vcf"` headers.
+
+**Response `404`** if the UID does not exist.
+
+---
+
 ### GET /api/contacts/{uid}
 
 Fetches a single contact by UID.
