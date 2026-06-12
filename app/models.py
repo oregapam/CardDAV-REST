@@ -58,6 +58,7 @@ class ContactsPage(BaseModel):
     limit: int
     offset: int
     items: list[ContactOut]
+    warning: Optional[str] = None
 
 
 class SearchRequest(BaseModel):

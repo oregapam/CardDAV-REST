@@ -67,7 +67,7 @@ def test_list_all_contacts_empty(client):
     resp = client.get("/api/contacts")
     assert resp.status_code == 200
     body = resp.json()
-    assert body == {"total": 0, "limit": 50, "offset": 0, "items": []}
+    assert body == {"total": 0, "limit": 50, "offset": 0, "items": [], "warning": None}
 
 
 @respx.mock
@@ -98,7 +98,7 @@ def test_list_contacts_pagination_offset(client):
 
 
 @respx.mock
-def test_list_contacts_offset_beyond_total_returns_empty(client):
+def test_list_contacts_offset_beyond_total_returns_warning(client):
     respx.route(method="REPORT", url=BASE).mock(
         return_value=httpx.Response(207, text=MULTISTATUS_TWO)
     )
@@ -107,6 +107,16 @@ def test_list_contacts_offset_beyond_total_returns_empty(client):
     body = resp.json()
     assert body["total"] == 2
     assert body["items"] == []
+    assert body["warning"] == "offset (100) exceeds total (2)"
+
+
+@respx.mock
+def test_list_contacts_no_warning_when_offset_in_range(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_TWO)
+    )
+    resp = client.get("/api/contacts?offset=0")
+    assert resp.json()["warning"] is None
 
 
 @respx.mock

@@ -65,11 +65,14 @@ async def list_contacts(
         contact = vcard_to_contact(vcf, name_format)
         contact.uid = uid
         all_contacts.append(contact)
+    total = len(all_contacts)
+    warning = f"offset ({offset}) exceeds total ({total})" if total > 0 and offset >= total else None
     return ContactsPage(
-        total=len(all_contacts),
+        total=total,
         limit=limit,
         offset=offset,
         items=all_contacts[offset : offset + limit],
+        warning=warning,
     )
 
 
