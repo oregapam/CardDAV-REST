@@ -271,6 +271,40 @@ def test_update_contact_invalid_phone_is_422(client):
     assert "Invalid phone number" in resp.json()["detail"]
 
 
+def test_update_contact_missing_required_field_is_422(client_with_env):
+    with client_with_env({"REQUIRED_FIELDS": "emails"}) as c:
+        c.headers["X-API-Key"] = "test-key"
+        with respx.mock:
+            respx.get(BASE + "abc-123.vcf").mock(
+                return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})
+            )
+            resp = c.put(
+                "/api/addressbooks/default/contacts/abc-123",
+                json={"firstname": "Anna", "lastname": "Kis"},
+            )
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "Missing required field(s): emails"
+
+
+def test_update_contact_with_required_field_present_succeeds(client_with_env):
+    with client_with_env({"REQUIRED_FIELDS": "emails"}) as c:
+        c.headers["X-API-Key"] = "test-key"
+        with respx.mock:
+            respx.get(BASE + "abc-123.vcf").mock(
+                return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})
+            )
+            respx.put(BASE + "abc-123.vcf").mock(return_value=httpx.Response(204))
+            resp = c.put(
+                "/api/addressbooks/default/contacts/abc-123",
+                json={
+                    "firstname": "Anna",
+                    "lastname": "Kis",
+                    "emails": [{"type": "work", "value": "anna@ceg.hu"}],
+                },
+            )
+    assert resp.status_code == 200
+
+
 @respx.mock
 def test_update_conflict_is_409(client):
     respx.get(BASE + "abc-123.vcf").mock(

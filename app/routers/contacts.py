@@ -175,12 +175,18 @@ async def update_contact(
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
     default_region: str = Depends(get_default_region),
+    required_fields: tuple[str, ...] = Depends(get_required_fields),
 ) -> dict:
     for phone in body.phones:
         try:
             phone.value = normalize_phone(phone.value, default_region)
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Invalid phone number: {phone.value}")
+    missing = missing_required_fields(body, required_fields)
+    if missing:
+        raise HTTPException(
+            status_code=422, detail=f"Missing required field(s): {', '.join(missing)}"
+        )
     existing_vcf, etag = await dav.get(book, uid)
     merged = merge_contact_into_vcard(existing_vcf, body, name_format)
     await dav.update(book, uid, merged, etag)
