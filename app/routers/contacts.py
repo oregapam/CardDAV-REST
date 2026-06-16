@@ -9,10 +9,12 @@ from app.models import (
     ContactCreate,
     ContactIn,
     ContactOut,
+    ContactPatch,
     ContactsPage,
     SearchMatch,
     SearchRequest,
     SearchResponse,
+    apply_contact_patch,
 )
 from app.phone import normalize_phone
 from app.required_fields import missing_required_fields
@@ -190,6 +192,39 @@ async def update_contact(
     existing_vcf, etag = await dav.get(book, uid)
     merged = merge_contact_into_vcard(existing_vcf, body, name_format)
     await dav.update(book, uid, merged, etag)
+    return {"status": "updated", "uid": uid}
+
+
+@router.patch("/{book}/contacts/{uid}")
+async def patch_contact(
+    book: str,
+    uid: str,
+    body: ContactPatch,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
+    default_region: str = Depends(get_default_region),
+    required_fields: tuple[str, ...] = Depends(get_required_fields),
+) -> dict:
+    existing_vcf, etag = await dav.get(book, uid)
+    existing_contact = vcard_to_contact(existing_vcf, name_format)
+    apply_contact_patch(existing_contact, body)
+    if "phones" in body.model_fields_set:
+        for phone in existing_contact.phones:
+            try:
+                phone.value = normalize_phone(phone.value, default_region)
+            except ValueError:
+                raise HTTPException(status_code=422, detail=f"Invalid phone number: {phone.value}")
+    if not (existing_contact.firstname or existing_contact.lastname):
+        raise HTTPException(
+            status_code=422, detail="At least one of firstname or lastname is required"
+        )
+    missing = missing_required_fields(existing_contact, required_fields)
+    if missing:
+        raise HTTPException(
+            status_code=422, detail=f"Missing required field(s): {', '.join(missing)}"
+        )
+    merged_vcf = merge_contact_into_vcard(existing_vcf, existing_contact, name_format)
+    await dav.update(book, uid, merged_vcf, etag)
     return {"status": "updated", "uid": uid}
 
 
