@@ -40,6 +40,18 @@ def test_principal_url_handles_trailing_slash(monkeypatch):
     assert s.principal_url == "http://baikal/dav.php/addressbooks/testuser/"
 
 
+def test_default_region_defaults_to_hu(monkeypatch):
+    _set_env(monkeypatch)
+    s = load_settings()
+    assert s.default_region == "HU"
+
+
+def test_default_region_reads_env_override(monkeypatch):
+    _set_env(monkeypatch, overrides={"DEFAULT_COUNTRY_CODE": "DE"})
+    s = load_settings()
+    assert s.default_region == "DE"
+
+
 def test_settings_dataclass_direct():
     s = Settings(
         baikal_url="http://baikal/dav.php",

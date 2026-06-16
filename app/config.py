@@ -15,6 +15,7 @@ class Settings:
     baikal_pass: str
     api_key: str
     name_format: NameFormat = "western"
+    default_region: str = "HU"
 
     @property
     def principal_url(self) -> str:
@@ -39,4 +40,5 @@ def load_settings() -> Settings:
         baikal_pass=os.environ["BAIKAL_PASS"],
         api_key=os.environ["API_KEY"],
         name_format=raw_format,  # type: ignore[arg-type]
+        default_region=os.getenv("DEFAULT_COUNTRY_CODE", "HU"),
     )
