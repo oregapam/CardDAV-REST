@@ -44,7 +44,13 @@ async def search_contacts(
     req: SearchRequest,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
+    default_region: str = Depends(get_default_region),
 ) -> SearchResponse:
+    if req.phone:
+        try:
+            req.phone = normalize_phone(req.phone, default_region)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Invalid phone number: {req.phone}")
     results = await dav.search(
         book,
         email=req.email,

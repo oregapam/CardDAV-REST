@@ -32,7 +32,7 @@ def test_search_not_found(client):
     )
     resp = client.post(
         "/api/addressbooks/default/contacts/search",
-        json={"name": "Senki", "phone": "+361", "match_condition": "anyof"},
+        json={"name": "Senki", "phone": "+36301234567", "match_condition": "anyof"},
     )
     assert resp.status_code == 200
     body = resp.json()
@@ -40,8 +40,36 @@ def test_search_not_found(client):
         "exists": False,
         "match_count": 0,
         "matches": [],
-        "searched_params": {"phone": "+361", "name": "Senki", "match_condition": "anyof"},
+        "searched_params": {
+            "phone": "+36301234567",
+            "name": "Senki",
+            "match_condition": "anyof",
+        },
     }
+
+
+@respx.mock
+def test_search_normalizes_phone_filter(client):
+    route = respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_EMPTY)
+    )
+    resp = client.post(
+        "/api/addressbooks/default/contacts/search",
+        json={"phone": "06301234567"},
+    )
+    assert resp.status_code == 200
+    sent = route.calls.last.request.content.decode("utf-8")
+    assert "+36301234567" in sent
+    assert resp.json()["searched_params"]["phone"] == "+36301234567"
+
+
+def test_search_invalid_phone_is_422(client):
+    resp = client.post(
+        "/api/addressbooks/default/contacts/search",
+        json={"phone": "123"},
+    )
+    assert resp.status_code == 422
+    assert "Invalid phone number" in resp.json()["detail"]
 
 
 def test_search_without_filters_is_422(client):
