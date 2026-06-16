@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
         ) as http:
             app.state.carddav = CardDAVClient(settings, http)
             app.state.name_format = settings.name_format
+            app.state.default_region = settings.default_region
             yield
 
     app = FastAPI(title="CardDAV-REST", lifespan=lifespan)
