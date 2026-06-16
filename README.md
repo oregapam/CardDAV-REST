@@ -54,6 +54,7 @@ below for full request/response detail on each.
 | `GET` | `/api/addressbooks/{book}/contacts/{uid}/vcard` | Download raw vCard |
 | `GET` | `/api/addressbooks/{book}/contacts/{uid}` | Get a contact |
 | `PUT` | `/api/addressbooks/{book}/contacts/{uid}` | Update a contact |
+| `PATCH` | `/api/addressbooks/{book}/contacts/{uid}` | Partially update a contact |
 | `POST` | `/api/addressbooks/{book}/contacts/{uid}/move/{target_book}` | Move a contact to another book |
 | `DELETE` | `/api/addressbooks/{book}/contacts/{uid}` | Delete a contact |
 | `GET` | `/health` | Health check (no API key) |
@@ -345,6 +346,43 @@ curl -X PUT http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
 ```
 
 **Response `200`** `{"status": "updated", "uid": "..."}` · **`404`** not found · **`409`** ETag mismatch.
+
+---
+
+### PATCH /api/addressbooks/{book}/contacts/{uid}
+
+Partially updates a contact — only the fields included in the request body are
+changed; everything else (including unmanaged `X-*` vCard properties) stays as
+it was. Use this instead of `PUT` when you only need to change one or two
+fields without resending the entire contact.
+
+```bash
+curl -X PATCH http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
+  -H "X-API-Key: $API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"org": "ACME Kft."}'
+```
+
+**Field semantics**
+
+| Body state | Effect |
+|---|---|
+| Field absent from the JSON | Left untouched |
+| Field present as `null`/`""`/`[]` | Cleared |
+| Field present with a value | Replaced entirely (list fields are not merged item-by-item) |
+
+At least one field must be present in the body, or the request returns `422`.
+
+`firstname`/`lastname` and `REQUIRED_FIELDS` (see above) are validated against
+the **resulting** contact, not the patch body alone — so patching just `org`
+on a contact that already has a name succeeds without resending it. Validation
+only fails if the patch itself drives the contact into an invalid state (e.g.
+clearing both `firstname` and `lastname`, or clearing a field listed in
+`REQUIRED_FIELDS`).
+
+**Response `200`** `{"status": "updated", "uid": "..."}` · **`404`** not found
+· **`409`** ETag mismatch · **`422`** empty body, invalid phone number, or the
+resulting contact is missing a required field.
 
 ---
 
