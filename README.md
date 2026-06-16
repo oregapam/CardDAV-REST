@@ -432,6 +432,7 @@ python -m pytest tests -v
 | `API_KEY` | yes | — | Key clients send in `X-API-Key` |
 | `NAME_FORMAT` | no | `western` | Format of the vCard FN field — see below |
 | `DEFAULT_COUNTRY_CODE` | no | `HU` | ISO 3166-1 alpha-2 region used to normalize phone numbers without a country code |
+| `REQUIRED_FIELDS` | no | _(empty)_ | Comma-separated `Contact` field names that must be present — see below |
 
 ### NAME_FORMAT options
 
@@ -462,3 +463,32 @@ A phone number that cannot be parsed or validated for the configured region
 returns `422` with `{"detail": "Invalid phone number: <value>"}`. The
 free-text quick search (`GET /contacts?q=`) is not affected, since `q` may
 match a name or email rather than a phone number.
+
+### Required fields
+
+Beyond the built-in rule that `firstname` or `lastname` must be present,
+operators can require additional fields via `REQUIRED_FIELDS` (comma-separated
+list of contact field names). Applies to both `POST .../contacts` (create) and
+`PUT .../contacts/{uid}` (update).
+
+```
+REQUIRED_FIELDS=emails,phones
+```
+
+Valid field names: `firstname`, `lastname`, `middlename`, `prefix`, `suffix`,
+`emails`, `phones`, `addresses`, `org`, `title`, `birthday`, `urls`, `note`,
+`photo`, `categories`. An unrecognized name fails fast at startup.
+
+"Present" means: a non-empty (trimmed) string for string fields; at least one
+list entry with a non-empty `value` for `emails`/`phones`; at least one
+non-empty string for `urls`/`categories`; a non-empty list for `addresses`.
+
+A request missing any required field returns `422`:
+
+```json
+{"detail": "Missing required field(s): emails, org"}
+```
+
+This check runs after phone normalization, so an invalid (rather than missing)
+phone number reports the more specific `Invalid phone number: ...` error
+instead.

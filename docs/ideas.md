@@ -9,7 +9,7 @@
 ## Adatminőség
 
 - [x] **Telefonnormalizálás** — beíráskor automatikusan egységes formátumra hozza a számokat (pl. `06301234567` → `+36301234567`)
-- [ ] **Kötelező mező konfiguráció** — `REQUIRED_FIELDS=email` env var: ha nincs email a kontakton, 422-vel visszautasítja
+- [x] **Kötelező mező konfiguráció** — `REQUIRED_FIELDS=emails,phones` env var: ha a megadott mezők nélkül próbálnak kontaktot létrehozni/módosítani, 422-vel visszautasítja
 
 ## Műveletek
 
@@ -19,3 +19,4 @@
 ## Megfigyelhetőség
 
 - [ ] **`GET /api/stats`** — kontaktok száma, utolsó módosítás (hasznos n8n dashboardhoz)
+- [ ] **`GET /api/config`** — visszaadja az aktív `required_fields`, `default_region`, `name_format` beállításokat, hogy egy n8n node dinamikusan tudjon formot építeni (a `REQUIRED_FIELDS` jelenleg nem látszik az OpenAPI sémában)
