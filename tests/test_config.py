@@ -52,6 +52,30 @@ def test_default_region_reads_env_override(monkeypatch):
     assert s.default_region == "DE"
 
 
+def test_required_fields_defaults_to_empty(monkeypatch):
+    _set_env(monkeypatch)
+    s = load_settings()
+    assert s.required_fields == ()
+
+
+def test_required_fields_parses_comma_separated(monkeypatch):
+    _set_env(monkeypatch, overrides={"REQUIRED_FIELDS": "emails,phones"})
+    s = load_settings()
+    assert s.required_fields == ("emails", "phones")
+
+
+def test_required_fields_strips_whitespace_and_trailing_comma(monkeypatch):
+    _set_env(monkeypatch, overrides={"REQUIRED_FIELDS": " emails , phones, "})
+    s = load_settings()
+    assert s.required_fields == ("emails", "phones")
+
+
+def test_required_fields_rejects_unknown_field_name(monkeypatch):
+    _set_env(monkeypatch, overrides={"REQUIRED_FIELDS": "email"})
+    with pytest.raises(RuntimeError, match="email"):
+        load_settings()
+
+
 def test_settings_dataclass_direct():
     s = Settings(
         baikal_url="http://baikal/dav.php",
