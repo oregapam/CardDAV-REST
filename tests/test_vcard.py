@@ -179,3 +179,9 @@ def test_merge_result_is_valid_vcard():
     assert c.uid == "abc-123"
     assert c.firstname == "Anna"
     assert c.lastname == "Nagy"
+
+
+def test_merge_does_not_duplicate_fn():
+    merged = merge_contact_into_vcard(SAMPLE_VCF, Contact(firstname="Anna", lastname="Nagy"))
+    assert merged.count("FN:") == 1
+    assert "FN:Anna Kis" not in merged

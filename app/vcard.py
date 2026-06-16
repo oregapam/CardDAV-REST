@@ -7,7 +7,6 @@ from app.models import Address, Contact, ContactOut, TypedValue
 NAME_FORMAT_DEFAULT = "western"
 
 MANAGED_PROPS = ("n", "fn", "email", "tel", "adr", "org", "title", "bday", "url", "note", "photo", "categories")
-_MERGE_MANAGED_PROPS = tuple(p for p in MANAGED_PROPS if p != "fn")
 
 
 def build_fn(contact: Contact, name_format: str = NAME_FORMAT_DEFAULT) -> str:
@@ -153,7 +152,7 @@ def vcard_to_contact(vcf: str, name_format: str = NAME_FORMAT_DEFAULT) -> Contac
 
 def merge_contact_into_vcard(existing_vcf: str, contact: Contact, name_format: str = NAME_FORMAT_DEFAULT) -> str:
     card = vobject.readOne(existing_vcf)
-    for prop in _MERGE_MANAGED_PROPS:
+    for prop in MANAGED_PROPS:
         if prop in card.contents:
             del card.contents[prop]
     _fill_card(card, contact, name_format)
