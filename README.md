@@ -479,6 +479,20 @@ Valid field names: `firstname`, `lastname`, `middlename`, `prefix`, `suffix`,
 `emails`, `phones`, `addresses`, `org`, `title`, `birthday`, `urls`, `note`,
 `photo`, `categories`. An unrecognized name fails fast at startup.
 
+**`firstname`/`lastname` and the built-in name rule.** There's already a
+baked-in rule, always active, that doesn't depend on `REQUIRED_FIELDS` at all:
+every contact needs *either* a first name *or* a last name — a contact with
+only `lastname: "Kis"` and no `firstname` is accepted. This is the bare
+minimum, always enforced, no configuration needed.
+
+`REQUIRED_FIELDS` can make this stricter, on top of that baseline. If you add
+`firstname` to the list, it stops being "first name OR last name" for your
+deployment and becomes "first name specifically, mandatory" — a contact with
+only a last name would now be rejected. The same applies if you add `lastname`
+instead. You only need to do this if the default OR-rule is too loose for your
+use case; most deployments can leave `firstname`/`lastname` out of
+`REQUIRED_FIELDS` and rely on the built-in rule alone.
+
 "Present" means: a non-empty (trimmed) string for string fields; at least one
 list entry with a non-empty `value` for `emails`/`phones`; at least one
 non-empty string for `urls`/`categories`; a non-empty list for `addresses`.
