@@ -62,6 +62,49 @@ def test_create_contact_invalid_phone_is_422(client):
     assert "Invalid phone number" in resp.json()["detail"]
 
 
+def test_create_contact_missing_required_field_is_422(client_with_env):
+    with client_with_env({"REQUIRED_FIELDS": "emails"}) as c:
+        c.headers["X-API-Key"] = "test-key"
+        resp = c.post(
+            "/api/addressbooks/default/contacts",
+            json={"firstname": "Anna", "lastname": "Kis"},
+        )
+    assert resp.status_code == 422
+    assert resp.json()["detail"] == "Missing required field(s): emails"
+
+
+@respx.mock
+def test_create_contact_with_required_field_present_succeeds(client_with_env):
+    with client_with_env({"REQUIRED_FIELDS": "emails"}) as c:
+        c.headers["X-API-Key"] = "test-key"
+        route = respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(201))
+        resp = c.post(
+            "/api/addressbooks/default/contacts",
+            json={
+                "firstname": "Anna",
+                "lastname": "Kis",
+                "emails": [{"type": "work", "value": "anna@ceg.hu"}],
+            },
+        )
+        assert route.called
+    assert resp.status_code == 201
+
+
+def test_create_contact_invalid_phone_reported_before_missing_field(client_with_env):
+    with client_with_env({"REQUIRED_FIELDS": "emails"}) as c:
+        c.headers["X-API-Key"] = "test-key"
+        resp = c.post(
+            "/api/addressbooks/default/contacts",
+            json={
+                "firstname": "Anna",
+                "lastname": "Kis",
+                "phones": [{"type": "mobile", "value": "123"}],
+            },
+        )
+    assert resp.status_code == 422
+    assert "Invalid phone number" in resp.json()["detail"]
+
+
 def test_create_without_name_is_422(client):
     resp = client.post(
         "/api/addressbooks/default/contacts", json={"emails": [{"value": "a@b.hu"}]}

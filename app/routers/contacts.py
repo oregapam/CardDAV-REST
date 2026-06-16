@@ -15,6 +15,7 @@ from app.models import (
     SearchResponse,
 )
 from app.phone import normalize_phone
+from app.required_fields import missing_required_fields
 from app.vcard import contact_to_vcard, merge_contact_into_vcard, vcard_to_contact
 
 router = APIRouter(prefix="/api/addressbooks", tags=["contacts"])
@@ -30,6 +31,10 @@ def get_name_format(request: Request) -> str:
 
 def get_default_region(request: Request) -> str:
     return request.app.state.default_region
+
+
+def get_required_fields(request: Request) -> tuple[str, ...]:
+    return request.app.state.required_fields
 
 
 @router.get("", response_model=list[AddressbookInfo])
@@ -105,12 +110,18 @@ async def create_contact(
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
     default_region: str = Depends(get_default_region),
+    required_fields: tuple[str, ...] = Depends(get_required_fields),
 ) -> dict:
     for phone in body.phones:
         try:
             phone.value = normalize_phone(phone.value, default_region)
         except ValueError:
             raise HTTPException(status_code=422, detail=f"Invalid phone number: {phone.value}")
+    missing = missing_required_fields(body, required_fields)
+    if missing:
+        raise HTTPException(
+            status_code=422, detail=f"Missing required field(s): {', '.join(missing)}"
+        )
     if body.check_duplicates:
         for email in body.emails:
             results = await dav.search(book, email=email.value)
