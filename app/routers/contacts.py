@@ -14,6 +14,7 @@ from app.models import (
     SearchRequest,
     SearchResponse,
 )
+from app.phone import normalize_phone
 from app.vcard import contact_to_vcard, merge_contact_into_vcard, vcard_to_contact
 
 router = APIRouter(prefix="/api/addressbooks", tags=["contacts"])
@@ -25,6 +26,10 @@ def get_dav(request: Request) -> CardDAVClient:
 
 def get_name_format(request: Request) -> str:
     return request.app.state.name_format
+
+
+def get_default_region(request: Request) -> str:
+    return request.app.state.default_region
 
 
 @router.get("", response_model=list[AddressbookInfo])
@@ -93,7 +98,13 @@ async def create_contact(
     body: ContactCreate,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
+    default_region: str = Depends(get_default_region),
 ) -> dict:
+    for phone in body.phones:
+        try:
+            phone.value = normalize_phone(phone.value, default_region)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Invalid phone number: {phone.value}")
     if body.check_duplicates:
         for email in body.emails:
             results = await dav.search(book, email=email.value)

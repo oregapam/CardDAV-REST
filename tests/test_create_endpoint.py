@@ -33,6 +33,35 @@ def test_create_contact(client):
     assert "VERSION:3.0" in sent
 
 
+@respx.mock
+def test_create_contact_normalizes_phone(client):
+    route = respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(201))
+    resp = client.post(
+        "/api/addressbooks/default/contacts",
+        json={
+            "firstname": "Anna",
+            "lastname": "Kis",
+            "phones": [{"type": "mobile", "value": "06301234567"}],
+        },
+    )
+    assert resp.status_code == 201
+    sent = route.calls.last.request.content.decode("utf-8")
+    assert "+36301234567" in sent
+
+
+def test_create_contact_invalid_phone_is_422(client):
+    resp = client.post(
+        "/api/addressbooks/default/contacts",
+        json={
+            "firstname": "Anna",
+            "lastname": "Kis",
+            "phones": [{"type": "mobile", "value": "123"}],
+        },
+    )
+    assert resp.status_code == 422
+    assert "Invalid phone number" in resp.json()["detail"]
+
+
 def test_create_without_name_is_422(client):
     resp = client.post(
         "/api/addressbooks/default/contacts", json={"emails": [{"value": "a@b.hu"}]}
