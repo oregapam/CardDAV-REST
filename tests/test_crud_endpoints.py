@@ -236,6 +236,42 @@ def test_update_contact_merges_and_sends_if_match(client):
 
 
 @respx.mock
+def test_update_contact_normalizes_phone(client):
+    respx.get(BASE + "abc-123.vcf").mock(
+        return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})
+    )
+    put_route = respx.put(BASE + "abc-123.vcf").mock(return_value=httpx.Response(204))
+    resp = client.put(
+        "/api/addressbooks/default/contacts/abc-123",
+        json={
+            "firstname": "Anna",
+            "lastname": "Kis",
+            "phones": [{"type": "mobile", "value": "06301234567"}],
+        },
+    )
+    assert resp.status_code == 200
+    sent = put_route.calls.last.request.content.decode("utf-8")
+    assert "+36301234567" in sent
+
+
+@respx.mock
+def test_update_contact_invalid_phone_is_422(client):
+    respx.get(BASE + "abc-123.vcf").mock(
+        return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})
+    )
+    resp = client.put(
+        "/api/addressbooks/default/contacts/abc-123",
+        json={
+            "firstname": "Anna",
+            "lastname": "Kis",
+            "phones": [{"type": "mobile", "value": "123"}],
+        },
+    )
+    assert resp.status_code == 422
+    assert "Invalid phone number" in resp.json()["detail"]
+
+
+@respx.mock
 def test_update_conflict_is_409(client):
     respx.get(BASE + "abc-123.vcf").mock(
         return_value=httpx.Response(200, text=EXISTING_VCF, headers={"ETag": '"v1"'})

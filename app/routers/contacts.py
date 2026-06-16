@@ -157,7 +157,13 @@ async def update_contact(
     body: ContactIn,
     dav: CardDAVClient = Depends(get_dav),
     name_format: str = Depends(get_name_format),
+    default_region: str = Depends(get_default_region),
 ) -> dict:
+    for phone in body.phones:
+        try:
+            phone.value = normalize_phone(phone.value, default_region)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Invalid phone number: {phone.value}")
     existing_vcf, etag = await dav.get(book, uid)
     merged = merge_contact_into_vcard(existing_vcf, body, name_format)
     await dav.update(book, uid, merged, etag)
