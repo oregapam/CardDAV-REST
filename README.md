@@ -446,7 +446,15 @@ curl http://localhost:8000/health
 | `404` | Contact UID not found |
 | `409` | Duplicate contact (create), ETag mismatch (update), or UID collision in target book (move) |
 | `422` | Validation error (missing required fields, no search filter, etc.) |
-| `502` | CardDAV server unreachable or rejected credentials |
+| `502` | CardDAV server unreachable, rejected credentials, or rejected the vCard itself (e.g. its own validation rules) |
+
+A `502` detail message passes through whatever the upstream CardDAV server
+reported, so it's worth reading literally — e.g. a sabre/dav-based server
+(like Baïkal) requires the vCard to contain **exactly one** `FN` property per
+contact, and will reject a write otherwise. The adapter always rebuilds `FN`
+fresh from the structured name fields on every `PUT`/`PATCH`, so this should
+never occur in practice — but if you see a `502` mentioning vCard validation,
+the `detail` field has the server's exact reason.
 
 ---
 
