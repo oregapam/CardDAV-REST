@@ -40,6 +40,26 @@ A missing or wrong key returns `401 Invalid or missing API key`.
 
 ---
 
+## Endpoints overview
+
+Quick reference for integration builders (e.g. an n8n node) — see "API Reference"
+below for full request/response detail on each.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/api/addressbooks` | List available address books |
+| `GET` | `/api/addressbooks/{book}/contacts` | List contacts (pagination + `q` quick search) |
+| `POST` | `/api/addressbooks/{book}/contacts/search` | Structured search by email/phone/name |
+| `POST` | `/api/addressbooks/{book}/contacts` | Create a contact |
+| `GET` | `/api/addressbooks/{book}/contacts/{uid}/vcard` | Download raw vCard |
+| `GET` | `/api/addressbooks/{book}/contacts/{uid}` | Get a contact |
+| `PUT` | `/api/addressbooks/{book}/contacts/{uid}` | Update a contact |
+| `POST` | `/api/addressbooks/{book}/contacts/{uid}/move/{target_book}` | Move a contact to another book |
+| `DELETE` | `/api/addressbooks/{book}/contacts/{uid}` | Delete a contact |
+| `GET` | `/health` | Health check (no API key) |
+
+---
+
 ## API Reference
 
 ### GET /api/addressbooks
@@ -163,7 +183,7 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
 | Filter | Match type | Notes |
 |--------|-----------|-------|
 | `email` | Exact match | Case-insensitive |
-| `phone` | Contains | Partial number works, e.g. `"1234567"` |
+| `phone` | Contains | Partial number works, e.g. `"1234567"`. Normalized to E.164 before searching — see [Phone number normalization](#phone-number-normalization) |
 | `name` | Contains | Matches against the full name (FN field) |
 
 **Response `200`**
