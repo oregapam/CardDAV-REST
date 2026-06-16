@@ -8,7 +8,7 @@
 
 ## Adatminőség
 
-- [ ] **Telefonnormalizálás** — beíráskor automatikusan egységes formátumra hozza a számokat (pl. `06301234567` → `+36301234567`)
+- [x] **Telefonnormalizálás** — beíráskor automatikusan egységes formátumra hozza a számokat (pl. `06301234567` → `+36301234567`)
 - [ ] **Kötelező mező konfiguráció** — `REQUIRED_FIELDS=email` env var: ha nincs email a kontakton, 422-vel visszautasítja
 
 ## Műveletek

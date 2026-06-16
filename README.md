@@ -411,6 +411,7 @@ python -m pytest tests -v
 | `BAIKAL_PASS` | yes | — | Baïkal password |
 | `API_KEY` | yes | — | Key clients send in `X-API-Key` |
 | `NAME_FORMAT` | no | `western` | Format of the vCard FN field — see below |
+| `DEFAULT_COUNTRY_CODE` | no | `HU` | ISO 3166-1 alpha-2 region used to normalize phone numbers without a country code |
 
 ### NAME_FORMAT options
 
@@ -424,3 +425,20 @@ Controls how the full name (`fn`) field is assembled from the individual name pa
 
 The structured name parts (`firstname`, `lastname`, etc.) are always stored separately
 and are unaffected by this setting. Only the display name (`fn`) changes.
+
+### Phone number normalization
+
+Phone numbers in `phones[].value` are normalized to E.164 format
+(`+<countrycode><number>`, no spaces) whenever a contact is created, updated,
+or used as a search filter (`POST /contacts/search`). Numbers without a
+country code are interpreted using `DEFAULT_COUNTRY_CODE`.
+
+```
+06301234567  →  +36301234567   (DEFAULT_COUNTRY_CODE=HU)
++36301234567 →  +36301234567   (already E.164, unchanged)
+```
+
+A phone number that cannot be parsed or validated for the configured region
+returns `422` with `{"detail": "Invalid phone number: <value>"}`. The
+free-text quick search (`GET /contacts?q=`) is not affected, since `q` may
+match a name or email rather than a phone number.
