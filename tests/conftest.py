@@ -33,3 +33,16 @@ def client(monkeypatch):
     with _make_client(monkeypatch) as c:
         c.headers["X-API-Key"] = "test-key"
         yield c
+
+
+@pytest.fixture
+def client_with_env(monkeypatch):
+    def _make(extra_env: dict) -> TestClient:
+        env = {**TEST_ENV, **extra_env}
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        from app.main import create_app
+
+        return TestClient(create_app())
+
+    return _make
