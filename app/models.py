@@ -35,6 +35,46 @@ class Contact(BaseModel):
     categories: list[str] = []
 
 
+class ContactPatch(BaseModel):
+    firstname: Optional[str] = None
+    lastname: Optional[str] = None
+    middlename: Optional[str] = None
+    prefix: Optional[str] = None
+    suffix: Optional[str] = None
+    emails: Optional[list[TypedValue]] = None
+    phones: Optional[list[TypedValue]] = None
+    addresses: Optional[list[Address]] = None
+    org: Optional[str] = None
+    title: Optional[str] = None
+    birthday: Optional[str] = None
+    urls: Optional[list[str]] = None
+    note: Optional[str] = None
+    photo: Optional[str] = None
+    categories: Optional[list[str]] = None
+
+    @model_validator(mode="after")
+    def require_at_least_one_field(self) -> "ContactPatch":
+        if not self.model_fields_set:
+            raise ValueError("At least one field must be provided")
+        return self
+
+
+_FIELD_DEFAULTS: dict[str, object] = {
+    "firstname": "", "lastname": "", "middlename": "", "prefix": "", "suffix": "",
+    "emails": [], "phones": [], "addresses": [], "org": "", "title": "",
+    "birthday": "", "urls": [], "note": "", "photo": "", "categories": [],
+}
+
+
+def apply_contact_patch(existing: Contact, patch: ContactPatch) -> None:
+    """Mutates `existing` in place, applying only the fields explicitly
+    present in `patch` (per `model_fields_set`). A field provided as
+    null/empty clears it; a field not provided is left untouched."""
+    for name in patch.model_fields_set:
+        value = getattr(patch, name)
+        setattr(existing, name, value if value is not None else _FIELD_DEFAULTS[name])
+
+
 class ContactIn(Contact):
     @model_validator(mode="after")
     def require_name(self) -> "ContactIn":

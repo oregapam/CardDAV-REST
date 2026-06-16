@@ -7,8 +7,10 @@ from app.models import (
     ContactCreate,
     ContactIn,
     ContactOut,
+    ContactPatch,
     SearchRequest,
     TypedValue,
+    apply_contact_patch,
 )
 
 
@@ -53,3 +55,61 @@ def test_search_request_rejects_bad_match_condition():
     with pytest.raises(ValidationError):
         SearchRequest(email="a@b.hu", match_condition="sometimes")
     assert SearchRequest(name="Anna", match_condition="anyof").match_condition == "anyof"
+
+
+def test_contact_patch_rejects_empty_body():
+    with pytest.raises(ValidationError):
+        ContactPatch()
+
+
+def test_contact_patch_accepts_single_field():
+    p = ContactPatch(org="ACME")
+    assert p.org == "ACME"
+    assert "org" in p.model_fields_set
+
+
+def test_apply_contact_patch_leaves_unset_fields_untouched():
+    existing = Contact(firstname="Anna", lastname="Kis", org="Old Kft.")
+    patch = ContactPatch(org="New Kft.")
+    apply_contact_patch(existing, patch)
+    assert existing.firstname == "Anna"
+    assert existing.lastname == "Kis"
+    assert existing.org == "New Kft."
+
+
+def test_apply_contact_patch_clears_field_sent_as_empty_string():
+    existing = Contact(firstname="Anna", org="ACME")
+    patch = ContactPatch(org="")
+    apply_contact_patch(existing, patch)
+    assert existing.org == ""
+
+
+def test_apply_contact_patch_clears_field_sent_as_null():
+    existing = Contact(firstname="Anna", org="ACME")
+    patch = ContactPatch(org=None)
+    apply_contact_patch(existing, patch)
+    assert existing.org == ""
+
+
+def test_apply_contact_patch_replaces_list_field_wholesale():
+    existing = Contact(emails=[TypedValue(type="work", value="old@ceg.hu")])
+    patch = ContactPatch(emails=[TypedValue(type="home", value="new@ceg.hu")])
+    apply_contact_patch(existing, patch)
+    assert len(existing.emails) == 1
+    assert existing.emails[0].value == "new@ceg.hu"
+
+
+def test_apply_contact_patch_clears_list_field_sent_empty():
+    existing = Contact(emails=[TypedValue(value="a@b.hu")])
+    patch = ContactPatch(emails=[])
+    apply_contact_patch(existing, patch)
+    assert existing.emails == []
+
+
+def test_apply_contact_patch_multiple_fields_at_once():
+    existing = Contact(firstname="Anna", lastname="Kis", org="Old", title="Dev")
+    patch = ContactPatch(org="New", title="Lead")
+    apply_contact_patch(existing, patch)
+    assert existing.org == "New"
+    assert existing.title == "Lead"
+    assert existing.firstname == "Anna"
