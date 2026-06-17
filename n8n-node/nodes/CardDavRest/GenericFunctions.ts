@@ -23,7 +23,19 @@ function buildErrorMessage(statusCode: number, body: unknown): string {
     if (d.matched_phone) return `Duplicate contact: phone ${d.matched_phone} already exists (UID: ${d.existing_uid})`;
     return 'Duplicate contact or concurrent modification conflict';
   }
-  if (statusCode === 422) return `Validation error: ${typeof b.detail === 'string' ? b.detail : JSON.stringify(b.detail ?? body)}`;
+  if (statusCode === 422) {
+    if (typeof b.detail === 'string') return `Validation error: ${b.detail}`;
+    if (Array.isArray(b.detail)) {
+      const msgs = (b.detail as Array<{ msg?: string; loc?: string[] }>)
+        .map((e) => {
+          const field = e.loc?.filter((p) => p !== 'body').join('.') ?? '';
+          return field ? `${field}: ${e.msg}` : (e.msg ?? JSON.stringify(e));
+        })
+        .join('; ');
+      return `Validation error: ${msgs}`;
+    }
+    return `Validation error: ${JSON.stringify(b.detail ?? body)}`;
+  }
   if (statusCode === 404) return 'Contact not found';
   if (statusCode === 401) return 'Invalid API key — check your CardDavRestApi credential';
   if (statusCode === 502) return 'Baïkal server unreachable — check that Baïkal is running';

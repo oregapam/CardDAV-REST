@@ -6,6 +6,7 @@ import {
   INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
+  NodeOperationError,
 } from 'n8n-workflow';
 
 import { apiRequest, loadAddressBooks } from './GenericFunctions';
@@ -269,6 +270,14 @@ export class CardDavRest implements INodeType {
             };
             if (addressesRaw.address?.length) {
               patchBody.addresses = addressesRaw.address;
+            }
+
+            if (Object.keys(patchBody).length === 0) {
+              throw new NodeOperationError(
+                this.getNode(),
+                'At least one field to update is required. Add fields using the "Fields to Update" collection.',
+                { itemIndex: i },
+              );
             }
 
             responseData = await apiRequest.call(
