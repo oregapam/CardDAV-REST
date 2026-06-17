@@ -46,8 +46,10 @@ def test_merge_contact_success(client):
     assert body["firstname"] == "Anna"
     assert body["lastname"] == "Kis"
     email_values = [e["value"] for e in body["emails"]]
+    assert len(email_values) == 2
     assert "anna@ceg.hu" in email_values
     assert "anna@gmail.com" in email_values
+    assert len(body["phones"]) == 1
     assert body["phones"][0]["value"] == "+36301234567"
     assert body["org"] == "ACME Kft."
     sent = put_route.calls.last.request.content.decode("utf-8")
@@ -58,7 +60,7 @@ def test_merge_contact_success(client):
 def test_merge_contact_same_uid_is_422(client):
     resp = client.post("/api/addressbooks/default/contacts/uid-primary/merge/uid-primary")
     assert resp.status_code == 422
-    assert "different" in resp.json()["detail"]
+    assert resp.json()["detail"] == "uid and other_uid must be different"
 
 
 @respx.mock
