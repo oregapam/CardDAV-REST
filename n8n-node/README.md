@@ -22,11 +22,15 @@ docker compose up -d
 
 n8n will be available at `http://localhost:5678`. The **CardDAV REST** node will appear in the node picker without any additional installation step — do **not** use Settings → Community Nodes → Install.
 
-After changing the node source, rebuild:
+After changing the node source, rebuild and restart:
 
 ```bash
-npm run build && docker compose build && docker compose up -d
+npm run build
+docker compose build
+docker compose up -d
 ```
+
+Existing workflows and credentials are preserved — only the image is replaced. The `n8n-data` volume is not touched.
 
 To test against a running CardDAV REST adapter (started via the root `docker-compose.yml`), set the credential **Base URL** to:
 

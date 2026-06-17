@@ -260,16 +260,16 @@ export const contactFields: INodeProperties[] = [
         default: '',
         description: 'Comma-separated list of URLs, e.g. "https://example.com, https://blog.example.com"',
       },
+      {
+        displayName: 'Check for Duplicates',
+        name: 'checkDuplicates',
+        type: 'boolean',
+        default: true,
+        displayOptions: { show: { '/operation': ['create'] } },
+        description:
+          'Whether to return a 409 error if a contact with the same email already exists',
+      },
     ],
-  },
-  {
-    displayName: 'Check for Duplicates',
-    name: 'checkDuplicates',
-    type: 'boolean',
-    displayOptions: { show: { resource: ['contact'], operation: ['create'] } },
-    default: false,
-    description:
-      'Whether to return a 409 error if a contact with the same email already exists',
   },
   {
     displayName: 'Fields to Update',

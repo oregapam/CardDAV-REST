@@ -179,7 +179,8 @@ export class CardDavRest implements INodeType {
             );
           } else if (operation === 'create') {
             const body = buildContactBody(this, i);
-            body.check_duplicates = this.getNodeParameter('checkDuplicates', i) as boolean;
+            const createAddl = this.getNodeParameter('additionalFields', i) as IDataObject;
+            body.check_duplicates = (createAddl.checkDuplicates as boolean) ?? true;
             responseData = await apiRequest.call(
               this,
               'POST',
