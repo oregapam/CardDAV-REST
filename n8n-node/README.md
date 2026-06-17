@@ -1,14 +1,14 @@
 # n8n-nodes-carddav-rest
 
-n8n community node a [CardDAV REST](https://github.com/mark/CardDAV-REST) adapterhez. Lehetővé teszi Baïkal-ban tárolt névjegyek kezelését n8n workflow-kból — HTTP Request node-ok kézzel írása nélkül.
+n8n community node for the [CardDAV REST](https://github.com/mark/CardDAV-REST) adapter. Manage contacts stored in Baïkal from n8n workflows — no hand-crafted HTTP Request nodes required.
 
-## Telepítés
+## Installation
 
-### n8n-ből
+### From n8n
 
-**Settings → Community Nodes → Install** → csomagnév: `n8n-nodes-carddav-rest`
+**Settings → Community Nodes → Install** → package name: `n8n-nodes-carddav-rest`
 
-### Helyi fejlesztéshez
+### Local development
 
 ```bash
 cd n8n-node
@@ -16,9 +16,9 @@ npm install
 npm run dev
 ```
 
-Ez elindít egy n8n példányt a node-dal betöltve (`http://localhost:5678`).
+This starts an n8n instance with the node loaded at `http://localhost:5678`.
 
-Alternatív Docker-alapú telepítés:
+Alternatively, mount it into a Docker-based n8n instance:
 
 ```bash
 docker run -it --rm \
@@ -28,119 +28,119 @@ docker run -it --rm \
   n8nio/n8n
 ```
 
-## Hitelesítés
+## Authentication
 
-A node a **CardDAV REST API** credential-t használja, amelynek két mezője van:
+The node uses the **CardDAV REST API** credential with two fields:
 
-| Mező | Leírás |
-|------|--------|
-| Base URL | A CardDAV REST adapter URL-je (pl. `http://localhost:8000`) |
-| API Key | Az `X-API-Key` headerbe kerülő kulcs |
+| Field | Description |
+|-------|-------------|
+| Base URL | URL of the CardDAV REST adapter (e.g. `http://localhost:8000`) |
+| API Key | Sent as the `X-API-Key` header on every request |
 
-## Erőforrások és műveletek
+## Resources and Operations
 
-### Contact (Névjegy)
+### Contact
 
-Minden névjegy-művelethez kötelező az **Address Book** kiválasztása (dinamikus legördülő).
+All contact operations require selecting an **Address Book** (dynamic dropdown populated from the server).
 
-| Művelet | Leírás |
-|---------|--------|
-| **List** | Névjegyek listázása (lapozható, gyors kereséssel) |
-| **Get** | Egy névjegy lekérése UID alapján |
-| **Create** | Új névjegy létrehozása |
-| **Update (Full Replace)** | Névjegy összes mezőjének felváltása |
-| **Update Fields** | Csak a megadott mezők módosítása (PATCH) |
-| **Delete** | Névjegy törlése |
-| **Search** | Keresés név, e-mail vagy telefonszám alapján (AND/OR logika) |
-| **Merge Duplicates** | Két névjegy összevonása (duplikált törlése) |
-| **Move to Addressbook** | Névjegy áthelyezése másik címjegyzékbe |
-| **Download vCard** | Névjegy letöltése `.vcf` fájlként (bináris kimenet) |
+| Operation | Description |
+|-----------|-------------|
+| **List** | List contacts with pagination and optional quick search |
+| **Get** | Retrieve a single contact by UID |
+| **Create** | Create a new contact |
+| **Update (Full Replace)** | Replace all fields of an existing contact |
+| **Update Fields** | Update only the specified fields (PATCH) |
+| **Delete** | Delete a contact |
+| **Search** | Search by name, email, or phone with AND/OR logic |
+| **Merge Duplicates** | Merge two contacts — keeps the primary, deletes the duplicate |
+| **Move to Addressbook** | Move a contact to a different address book |
+| **Download vCard** | Download a contact as a `.vcf` file (binary output) |
 
-### Addressbook (Címjegyzék)
+### Addressbook
 
-| Művelet | Leírás |
-|---------|--------|
-| **List** | Az összes elérhető címjegyzék listázása |
+| Operation | Description |
+|-----------|-------------|
+| **List** | List all available address books |
 
-### Stats (Statisztika)
+### Stats
 
-| Művelet | Leírás |
-|---------|--------|
-| **Get** | Névjegyszám, utolsó/legrégebbi módosítás, fájlméret minden címjegyzékre |
+| Operation | Description |
+|-----------|-------------|
+| **Get** | Return contact count, last/oldest modification date, and total size per address book |
 
-### Config (Konfiguráció)
+### Config
 
-| Művelet | Leírás |
-|---------|--------|
-| **Get** | Aktív szerver konfiguráció lekérése (`name_format`, `default_region`, `required_fields`) |
+| Operation | Description |
+|-----------|-------------|
+| **Get** | Return active server configuration (`name_format`, `default_region`, `required_fields`) |
 
-## Névjegy mezők
+## Contact Fields
 
-### Alapmezők (Create / Update)
+### Core fields (Create / Update)
 
-| Mező | Kötelező | Leírás |
-|------|----------|--------|
-| First Name | igen* | *Legalább kereszt- vagy vezetéknév kötelező |
-| Last Name | nem | |
-| Phone Numbers | nem | Több szám, típusonként (cell/home/work/other) |
-| Email Addresses | nem | Több cím, típusonként (home/work/other) |
-| Addresses | nem | Több lakcím (utca, város, irányítószám, megye, ország) |
-| Additional Fields | nem | Születésnap, kategóriák, megjegyzés, szervezet, cím, stb. |
+| Field | Required | Notes |
+|-------|----------|-------|
+| First Name | yes* | *At least one of First Name or Last Name must be provided |
+| Last Name | no | |
+| Phone Numbers | no | Multiple entries, each with type (cell/home/work/other) and number |
+| Email Addresses | no | Multiple entries, each with type (home/work/other) and address |
+| Addresses | no | Multiple entries with street, city, ZIP, state, country |
+| Additional Fields | no | Birthday, categories, note, organization, title, photo URL, URLs, etc. |
 
-> A szerver `REQUIRED_FIELDS` konfigurációja alapján további mezők is kötelezővé válhatnak (pl. `phones`, `emails`). Hiányzó kötelező mező esetén a szerver 422-es hibával válaszol.
+> The server's `REQUIRED_FIELDS` configuration may make additional fields mandatory (e.g. `phones`, `emails`). The server returns a 422 error if a required field is missing.
 
-### Update Fields (PATCH) — csak a megadott mezők módosulnak
+### Update Fields (PATCH) — only listed fields are changed
 
-A `Fields to Update` kollekcióban add meg, mit szeretnél változtatni. A többi mező érintetlen marad.
+Add fields to the **Fields to Update** collection. Fields not listed remain untouched on the server.
 
-### Search paraméterek
+### Search parameters
 
-- **Name** — részleges egyezés (többszavas keresés szórend-független)
-- **Email** — pontos egyezés
-- **Phone** — részleges egyezés
+- **Name** — partial match, word-order independent for multi-word queries
+- **Email** — exact match
+- **Phone** — partial match
 - **Match Condition** — `All Of (AND)` / `Any Of (OR)`
 
-## Hibakezelés
+## Error Handling
 
-| HTTP státusz | n8n viselkedés |
-|-------------|---------------|
-| 401 | Hibás API kulcs |
-| 404 | Névjegy nem található |
-| 409 | Duplikált névjegy vagy egyidejű módosítás |
-| 422 | Validációs hiba (pl. hiányzó kötelező mező) |
-| 502 | A Baïkal szerver nem érhető el |
+| HTTP status | Behavior |
+|-------------|----------|
+| 401 | Invalid API key |
+| 404 | Contact not found |
+| 409 | Duplicate contact detected or concurrent modification conflict |
+| 422 | Validation error (e.g. missing required field) |
+| 502 | Baïkal server unreachable — check that Baïkal is running |
 
-## Fejlesztés
+## Development
 
 ```bash
 cd n8n-node
 npm install
-npm test          # Jest tesztcsomag futtatása
-npm run build     # TypeScript fordítása dist/-be
-npm run dev       # n8n indítása hot reload-dal
-npm run lint      # ESLint ellenőrzés
-npm run lint:fix  # Automatikus javítás
+npm test          # Run Jest test suite (31 tests)
+npm run build     # Compile TypeScript to dist/
+npm run dev       # Start n8n with hot reload
+npm run lint      # Run ESLint
+npm run lint:fix  # Auto-fix linting issues
 ```
 
-## Közzététel npm-re
+## Publishing to npm
 
-A csomag közzétételéhez frissítsd a `package.json` következő mezőit:
+Before publishing, fill in the following fields in `package.json`:
 
 - `author.name` / `author.email`
 - `homepage`
 - `repository.url`
 
-Majd:
+Then:
 
 ```bash
 npm run build
 npm publish
 ```
 
-## Kapcsolódó projekt
+## Related
 
-- [CardDAV REST adapter](../README.md) — a FastAPI-alapú Baïkal adapter, amelyet ez a node hív
+- [CardDAV REST adapter](../README.md) — the FastAPI-based Baïkal adapter this node calls
 
-## Licenc
+## License
 
 [MIT](LICENSE.md)
