@@ -137,6 +137,17 @@ async def create_contact(
                         "existing_uid": results[0][0],
                     },
                 )
+        for phone in body.phones:
+            results = await dav.search(book, phone=phone.value)
+            if results:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": "duplicate contact",
+                        "matched_phone": phone.value,
+                        "existing_uid": results[0][0],
+                    },
+                )
     uid = str(uuid.uuid4())
     vcf = contact_to_vcard(body, uid, name_format)
     await dav.create(book, uid, vcf)

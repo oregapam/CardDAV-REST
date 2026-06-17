@@ -267,7 +267,7 @@ export const contactFields: INodeProperties[] = [
         default: true,
         displayOptions: { show: { '/operation': ['create'] } },
         description:
-          'Whether to return a 409 error if a contact with the same email already exists',
+          'Whether to return a 409 error if a contact with the same email address or phone number already exists',
       },
     ],
   },

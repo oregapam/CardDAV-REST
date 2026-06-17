@@ -149,6 +149,43 @@ def test_create_with_duplicate_check_no_match_creates(client):
 
 
 @respx.mock
+def test_create_with_duplicate_check_phone_conflict(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_ONE)
+    )
+    resp = client.post(
+        "/api/addressbooks/default/contacts",
+        json={
+            "firstname": "Teszt",
+            "lastname": "János",
+            "check_duplicates": True,
+            "phones": [{"type": "cell", "value": "+36301234567"}],
+        },
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"]["matched_phone"] == "+36301234567"
+    assert resp.json()["detail"]["existing_uid"] == "abc-123"
+
+
+@respx.mock
+def test_create_with_duplicate_check_phone_no_match_creates(client):
+    respx.route(method="REPORT", url=BASE).mock(
+        return_value=httpx.Response(207, text=MULTISTATUS_EMPTY)
+    )
+    respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(201))
+    resp = client.post(
+        "/api/addressbooks/default/contacts",
+        json={
+            "firstname": "Anna",
+            "lastname": "Kis",
+            "check_duplicates": True,
+            "phones": [{"type": "home", "value": "+36201112222"}],
+        },
+    )
+    assert resp.status_code == 201
+
+
+@respx.mock
 def test_create_uid_collision_is_409(client):
     respx.put(url__regex=VCF_URL.pattern).mock(return_value=httpx.Response(412))
     resp = client.post(

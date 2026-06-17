@@ -20,6 +20,13 @@ docker build -t carddav-rest:latest .
 docker compose up -d
 ```
 
+After updating the API source, rebuild and restart the adapter:
+
+```bash
+docker build -t carddav-rest:latest .
+docker compose up -d carddav-rest
+```
+
 First-time Baïkal setup: open http://localhost:8800, finish the wizard,
 create the user and address books referenced in `.env`.
 
