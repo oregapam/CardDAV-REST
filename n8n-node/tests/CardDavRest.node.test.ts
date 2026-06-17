@@ -185,3 +185,83 @@ describe('execute — contact: list + get', () => {
     );
   });
 });
+
+describe('execute — contact: create', () => {
+  const node = new CardDavRest();
+
+  it('create calls POST /api/addressbooks/{book}/contacts', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'create',
+      {
+        addressBook: 'default',
+        firstname: 'Alice',
+        lastname: 'Smith',
+        checkDuplicates: false,
+        phones: {},
+        emails: {},
+        addresses: {},
+        additionalFields: {},
+      },
+      { status: 'success', uid: 'new-uid' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts',
+        body: expect.objectContaining({ firstname: 'Alice', lastname: 'Smith' }),
+      }),
+    );
+  });
+
+  it('create maps phones fixed collection to array', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'create',
+      {
+        addressBook: 'default',
+        firstname: 'Bob',
+        lastname: '',
+        checkDuplicates: false,
+        phones: { phone: [{ type: 'cell', value: '+36301234567' }] },
+        emails: {},
+        addresses: {},
+        additionalFields: {},
+      },
+      { status: 'success', uid: 'uid2' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({
+          phones: [{ type: 'cell', value: '+36301234567' }],
+        }),
+      }),
+    );
+  });
+
+  it('create maps additionalFields.categories string to array', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'create',
+      {
+        addressBook: 'default',
+        firstname: 'Carol',
+        lastname: '',
+        checkDuplicates: false,
+        phones: {},
+        emails: {},
+        addresses: {},
+        additionalFields: { categories: 'VIP, Customer' },
+      },
+      { status: 'success', uid: 'uid3' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: expect.objectContaining({ categories: ['VIP', 'Customer'] }),
+      }),
+    );
+  });
+});

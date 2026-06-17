@@ -104,4 +104,171 @@ export const contactFields: INodeProperties[] = [
     description:
       'Filter contacts by name, email, or phone (case-insensitive, partial match). Leave empty to return all.',
   },
+  {
+    displayName: 'First Name',
+    name: 'firstname',
+    type: 'string',
+    required: true,
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update'] } },
+    default: '',
+    description:
+      'At least one of First Name or Last Name is required. Server also enforces this.',
+  },
+  {
+    displayName: 'Last Name',
+    name: 'lastname',
+    type: 'string',
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update'] } },
+    default: '',
+  },
+  {
+    displayName: 'Phone Numbers',
+    name: 'phones',
+    type: 'fixedCollection',
+    typeOptions: { multipleValues: true },
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update', 'patch'] } },
+    default: {},
+    options: [
+      {
+        displayName: 'Phone',
+        name: 'phone',
+        values: [
+          {
+            displayName: 'Type',
+            name: 'type',
+            type: 'options',
+            options: [
+              { name: 'Cell', value: 'cell' },
+              { name: 'Home', value: 'home' },
+              { name: 'Work', value: 'work' },
+              { name: 'Other', value: 'other' },
+            ],
+            default: 'cell',
+          },
+          {
+            displayName: 'Number',
+            name: 'value',
+            type: 'string',
+            default: '',
+            description:
+              'Phone number. Server normalizes to E.164 format automatically (e.g. 06301234567 → +36301234567). May be required based on server REQUIRED_FIELDS config.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    displayName: 'Email Addresses',
+    name: 'emails',
+    type: 'fixedCollection',
+    typeOptions: { multipleValues: true },
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update', 'patch'] } },
+    default: {},
+    options: [
+      {
+        displayName: 'Email',
+        name: 'email',
+        values: [
+          {
+            displayName: 'Type',
+            name: 'type',
+            type: 'options',
+            options: [
+              { name: 'Home', value: 'home' },
+              { name: 'Work', value: 'work' },
+              { name: 'Other', value: 'other' },
+            ],
+            default: 'home',
+          },
+          {
+            displayName: 'Address',
+            name: 'value',
+            type: 'string',
+            default: '',
+            description:
+              'May be required based on server REQUIRED_FIELDS config.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    displayName: 'Addresses',
+    name: 'addresses',
+    type: 'fixedCollection',
+    typeOptions: { multipleValues: true },
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update', 'patch'] } },
+    default: {},
+    options: [
+      {
+        displayName: 'Address',
+        name: 'address',
+        values: [
+          {
+            displayName: 'Type',
+            name: 'type',
+            type: 'options',
+            options: [
+              { name: 'Home', value: 'home' },
+              { name: 'Work', value: 'work' },
+              { name: 'Other', value: 'other' },
+            ],
+            default: 'home',
+          },
+          { displayName: 'Street', name: 'street', type: 'string', default: '' },
+          { displayName: 'City', name: 'city', type: 'string', default: '' },
+          { displayName: 'ZIP', name: 'zip', type: 'string', default: '' },
+          { displayName: 'State', name: 'state', type: 'string', default: '' },
+          { displayName: 'Country', name: 'country', type: 'string', default: '' },
+        ],
+      },
+    ],
+  },
+  {
+    displayName: 'Additional Fields',
+    name: 'additionalFields',
+    type: 'collection',
+    placeholder: 'Add Field',
+    displayOptions: { show: { resource: ['contact'], operation: ['create', 'update'] } },
+    default: {},
+    options: [
+      { displayName: 'Birthday', name: 'birthday', type: 'string', default: '', placeholder: 'YYYY-MM-DD' },
+      {
+        displayName: 'Categories',
+        name: 'categories',
+        type: 'string',
+        default: '',
+        description: 'Comma-separated list of categories, e.g. "VIP, Customer"',
+      },
+      { displayName: 'Middle Name', name: 'middlename', type: 'string', default: '' },
+      {
+        displayName: 'Note',
+        name: 'note',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+      },
+      { displayName: 'Organization', name: 'org', type: 'string', default: '' },
+      { displayName: 'Photo URL', name: 'photo', type: 'string', default: '' },
+      { displayName: 'Prefix', name: 'prefix', type: 'string', default: '' },
+      { displayName: 'Suffix', name: 'suffix', type: 'string', default: '' },
+      { displayName: 'Title', name: 'title', type: 'string', default: '' },
+      {
+        displayName: 'URLs',
+        name: 'urls',
+        type: 'string',
+        default: '',
+        description: 'Comma-separated list of URLs, e.g. "https://example.com, https://blog.example.com"',
+      },
+    ],
+  },
+  {
+    displayName: 'Check for Duplicates',
+    name: 'checkDuplicates',
+    type: 'boolean',
+    displayOptions: { show: { resource: ['contact'], operation: ['create'] } },
+    default: false,
+    description:
+      'Whether to return a 409 error if a contact with the same email already exists',
+  },
 ];

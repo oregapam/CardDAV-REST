@@ -24,6 +24,65 @@ import {
   configOperations,
 } from './descriptions/config.description';
 
+function buildContactBody(
+  fn: IExecuteFunctions,
+  i: number,
+): IDataObject {
+  const firstname = fn.getNodeParameter('firstname', i) as string;
+  const lastname = fn.getNodeParameter('lastname', i) as string;
+  const phonesRaw = fn.getNodeParameter('phones', i) as {
+    phone?: Array<{ type: string; value: string }>;
+  };
+  const emailsRaw = fn.getNodeParameter('emails', i) as {
+    email?: Array<{ type: string; value: string }>;
+  };
+  const addressesRaw = fn.getNodeParameter('addresses', i) as {
+    address?: Array<{
+      type: string;
+      street: string;
+      city: string;
+      zip: string;
+      state: string;
+      country: string;
+    }>;
+  };
+  const additionalFields = fn.getNodeParameter(
+    'additionalFields',
+    i,
+  ) as IDataObject;
+
+  const body: IDataObject = {
+    firstname,
+    lastname,
+    phones: phonesRaw.phone ?? [],
+    emails: emailsRaw.email ?? [],
+    addresses: addressesRaw.address ?? [],
+  };
+
+  const stringFields = [
+    'middlename', 'prefix', 'suffix', 'org', 'title', 'birthday', 'note', 'photo',
+  ];
+  for (const key of stringFields) {
+    if (additionalFields[key] !== undefined && additionalFields[key] !== '') {
+      body[key] = additionalFields[key];
+    }
+  }
+  if (additionalFields.categories) {
+    body.categories = (additionalFields.categories as string)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (additionalFields.urls) {
+    body.urls = (additionalFields.urls as string)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  return body;
+}
+
 export class CardDavRest implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'CardDAV REST',
@@ -118,6 +177,15 @@ export class CardDavRest implements INodeType {
               this,
               'GET',
               `/api/addressbooks/${addressBook}/contacts/${uid}`,
+            );
+          } else if (operation === 'create') {
+            const body = buildContactBody(this, i);
+            body.check_duplicates = this.getNodeParameter('checkDuplicates', i) as boolean;
+            responseData = await apiRequest.call(
+              this,
+              'POST',
+              `/api/addressbooks/${addressBook}/contacts`,
+              body,
             );
           } else {
             throw new NodeOperationError(
