@@ -5,13 +5,14 @@ import {
 import { apiRequest, loadAddressBooks } from '../nodes/CardDavRest/GenericFunctions';
 
 function makeCtx(overrides: Record<string, unknown> = {}) {
-  const mockHttpRequest = jest.fn().mockResolvedValue({});
+  const mockHttpRequest = jest.fn().mockResolvedValue({ statusCode: 200, body: {} });
   return {
     ctx: {
       getCredentials: jest.fn().mockResolvedValue({
         baseUrl: 'http://localhost:8000',
         apiKey: 'test-key',
       }),
+      getNode: () => ({ name: 'CardDAV REST' }),
       helpers: { httpRequest: mockHttpRequest },
       ...overrides,
     } as unknown as IExecuteFunctions,
@@ -60,16 +61,61 @@ describe('apiRequest', () => {
       expect.objectContaining({ qs: { limit: 10 } }),
     );
   });
+
+  it('throws NodeOperationError with descriptive message on 409 duplicate email', async () => {
+    const { ctx } = makeCtx({
+      helpers: {
+        httpRequest: jest.fn().mockResolvedValue({
+          statusCode: 409,
+          body: { detail: { error: 'duplicate contact', matched_email: 'a@b.hu', existing_uid: 'uid-1' } },
+        }),
+      },
+    });
+    await expect(apiRequest.call(ctx, 'POST', '/api/contacts', {})).rejects.toThrow(
+      'Duplicate contact: email a@b.hu already exists (UID: uid-1)',
+    );
+  });
+
+  it('throws NodeOperationError with descriptive message on 409 duplicate phone', async () => {
+    const { ctx } = makeCtx({
+      helpers: {
+        httpRequest: jest.fn().mockResolvedValue({
+          statusCode: 409,
+          body: { detail: { error: 'duplicate contact', matched_phone: '+36201234567', existing_uid: 'uid-2' } },
+        }),
+      },
+    });
+    await expect(apiRequest.call(ctx, 'POST', '/api/contacts', {})).rejects.toThrow(
+      'Duplicate contact: phone +36201234567 already exists (UID: uid-2)',
+    );
+  });
+
+  it('throws NodeOperationError with descriptive message on 422', async () => {
+    const { ctx } = makeCtx({
+      helpers: {
+        httpRequest: jest.fn().mockResolvedValue({
+          statusCode: 422,
+          body: { detail: 'Missing required field(s): emails' },
+        }),
+      },
+    });
+    await expect(apiRequest.call(ctx, 'POST', '/api/contacts', {})).rejects.toThrow(
+      'Validation error: Missing required field(s): emails',
+    );
+  });
 });
 
 describe('loadAddressBooks', () => {
   it('returns name/value pairs from GET /api/addressbooks', async () => {
     const { ctx } = makeCtx({
       helpers: {
-        httpRequest: jest.fn().mockResolvedValue([
-          { name: 'default', displayname: 'Default' },
-          { name: 'leads', displayname: 'Leads' },
-        ]),
+        httpRequest: jest.fn().mockResolvedValue({
+          statusCode: 200,
+          body: [
+            { name: 'default', displayname: 'Default' },
+            { name: 'leads', displayname: 'Leads' },
+          ],
+        }),
       },
     });
     const result = await loadAddressBooks.call(

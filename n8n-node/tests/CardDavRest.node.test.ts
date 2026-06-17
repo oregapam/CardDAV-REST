@@ -11,7 +11,7 @@ function makeExecFn(
   paramOverrides: Record<string, unknown> = {},
   httpResult: unknown = {},
 ) {
-  const mockHttpRequest = jest.fn().mockResolvedValue(httpResult);
+  const mockHttpRequest = jest.fn().mockResolvedValue({ statusCode: 200, body: httpResult });
   const params: Record<string, unknown> = { resource, operation, ...paramOverrides };
   return {
     ctx: {
