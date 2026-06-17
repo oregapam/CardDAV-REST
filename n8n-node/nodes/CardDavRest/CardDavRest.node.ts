@@ -168,8 +168,20 @@ export class CardDavRest implements INodeType {
               `/api/addressbooks/${addressBook}/contacts`,
               undefined,
               qs,
-            )) as { items: IDataObject[] };
-            responseData = page.items;
+            )) as { items: IDataObject[]; total: number; warning?: string };
+            if (page.items.length === 0) {
+              responseData = [{
+                _total: page.total,
+                _offset: offset,
+                _warning: page.warning ?? null,
+              }];
+            } else {
+              responseData = page.items.map((item) => ({
+                ...item,
+                _total: page.total,
+                ...(page.warning ? { _warning: page.warning } : {}),
+              }));
+            }
           } else if (operation === 'get') {
             const uid = this.getNodeParameter('uid', i) as string;
             responseData = await apiRequest.call(
