@@ -187,6 +187,70 @@ export class CardDavRest implements INodeType {
               `/api/addressbooks/${addressBook}/contacts`,
               body,
             );
+          } else if (operation === 'update') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            const body = buildContactBody(this, i);
+            responseData = await apiRequest.call(
+              this,
+              'PUT',
+              `/api/addressbooks/${addressBook}/contacts/${uid}`,
+              body,
+            );
+          } else if (operation === 'patch') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            const fieldsToUpdate = this.getNodeParameter(
+              'fieldsToUpdate',
+              i,
+            ) as IDataObject;
+            const patchBody: IDataObject = {};
+
+            const scalarFields = [
+              'firstname', 'lastname', 'middlename', 'prefix', 'suffix',
+              'org', 'title', 'birthday', 'note', 'photo',
+            ];
+            for (const key of scalarFields) {
+              if (fieldsToUpdate[key] !== undefined) {
+                patchBody[key] = fieldsToUpdate[key];
+              }
+            }
+            if (fieldsToUpdate.categories !== undefined) {
+              patchBody.categories = (fieldsToUpdate.categories as string)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+            if (fieldsToUpdate.urls !== undefined) {
+              patchBody.urls = (fieldsToUpdate.urls as string)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean);
+            }
+
+            const phonesRaw = this.getNodeParameter('phones', i) as {
+              phone?: Array<{ type: string; value: string }>;
+            };
+            if (phonesRaw.phone?.length) {
+              patchBody.phones = phonesRaw.phone;
+            }
+            const emailsRaw = this.getNodeParameter('emails', i) as {
+              email?: Array<{ type: string; value: string }>;
+            };
+            if (emailsRaw.email?.length) {
+              patchBody.emails = emailsRaw.email;
+            }
+            const addressesRaw = this.getNodeParameter('addresses', i) as {
+              address?: unknown[];
+            };
+            if (addressesRaw.address?.length) {
+              patchBody.addresses = addressesRaw.address;
+            }
+
+            responseData = await apiRequest.call(
+              this,
+              'PATCH',
+              `/api/addressbooks/${addressBook}/contacts/${uid}`,
+              patchBody,
+            );
           } else {
             throw new NodeOperationError(
               this.getNode(),

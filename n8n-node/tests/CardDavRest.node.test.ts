@@ -265,3 +265,57 @@ describe('execute — contact: create', () => {
     );
   });
 });
+
+describe('execute — contact: update + patch', () => {
+  const node = new CardDavRest();
+
+  it('update calls PUT /api/addressbooks/{book}/contacts/{uid}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'update',
+      {
+        addressBook: 'default',
+        uid: 'uid-1',
+        firstname: 'Alice',
+        lastname: 'Updated',
+        phones: {},
+        emails: {},
+        addresses: {},
+        additionalFields: {},
+      },
+      { status: 'updated', uid: 'uid-1' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'PUT',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-1',
+        body: expect.objectContaining({ firstname: 'Alice' }),
+      }),
+    );
+  });
+
+  it('patch calls PATCH /api/addressbooks/{book}/contacts/{uid}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'patch',
+      {
+        addressBook: 'default',
+        uid: 'uid-1',
+        fieldsToUpdate: { org: 'Acme Inc' },
+        phones: {},
+        emails: {},
+        addresses: {},
+      },
+      { status: 'updated', uid: 'uid-1' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'PATCH',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-1',
+        body: expect.objectContaining({ org: 'Acme Inc' }),
+      }),
+    );
+  });
+});

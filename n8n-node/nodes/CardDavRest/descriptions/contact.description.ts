@@ -271,4 +271,46 @@ export const contactFields: INodeProperties[] = [
     description:
       'Whether to return a 409 error if a contact with the same email already exists',
   },
+  {
+    displayName: 'Fields to Update',
+    name: 'fieldsToUpdate',
+    type: 'collection',
+    placeholder: 'Add Field',
+    displayOptions: { show: { resource: ['contact'], operation: ['patch'] } },
+    default: {},
+    description:
+      'Only the fields you add here will be changed. Fields not listed here remain untouched.',
+    options: [
+      { displayName: 'Birthday', name: 'birthday', type: 'string', default: '' },
+      {
+        displayName: 'Categories',
+        name: 'categories',
+        type: 'string',
+        default: '',
+        description: 'Comma-separated. Replaces all existing categories.',
+      },
+      { displayName: 'First Name', name: 'firstname', type: 'string', default: '' },
+      { displayName: 'Last Name', name: 'lastname', type: 'string', default: '' },
+      { displayName: 'Middle Name', name: 'middlename', type: 'string', default: '' },
+      {
+        displayName: 'Note',
+        name: 'note',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+      },
+      { displayName: 'Organization', name: 'org', type: 'string', default: '' },
+      { displayName: 'Photo URL', name: 'photo', type: 'string', default: '' },
+      { displayName: 'Prefix', name: 'prefix', type: 'string', default: '' },
+      { displayName: 'Suffix', name: 'suffix', type: 'string', default: '' },
+      { displayName: 'Title', name: 'title', type: 'string', default: '' },
+      {
+        displayName: 'URLs',
+        name: 'urls',
+        type: 'string',
+        default: '',
+        description: 'Comma-separated. Replaces all existing URLs.',
+      },
+    ],
+  },
 ];
