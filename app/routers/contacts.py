@@ -246,6 +246,8 @@ async def merge_contact(
     merged = merge_contacts(primary, secondary)
     merged_vcf = merge_contact_into_vcard(primary_vcf, merged, name_format)
     await dav.update(book, uid, merged_vcf, primary_etag)
+    # Non-atomic: if delete fails the primary is already updated.
+    # Caller can retry — merge is idempotent at the data level.
     await dav.delete(book, other_uid)
     contact_out = vcard_to_contact(merged_vcf, name_format)
     contact_out.uid = uid

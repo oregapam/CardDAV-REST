@@ -45,6 +45,7 @@ def test_merge_contact_success(client):
     assert body["uid"] == "uid-primary"
     assert body["firstname"] == "Anna"
     assert body["lastname"] == "Kis"
+    assert body["fn"] == "Anna Kis"
     email_values = [e["value"] for e in body["emails"]]
     assert len(email_values) == 2
     assert "anna@ceg.hu" in email_values
