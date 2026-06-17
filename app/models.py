@@ -76,7 +76,7 @@ def apply_contact_patch(existing: Contact, patch: ContactPatch) -> None:
 
 
 def merge_contacts(primary: Contact, secondary: Contact) -> Contact:
-    result = primary.model_copy()
+    result = primary.model_copy(deep=True)
 
     for field in ("firstname", "lastname", "middlename", "prefix", "suffix",
                   "org", "title", "birthday", "note", "photo"):
@@ -87,6 +87,7 @@ def merge_contacts(primary: Contact, secondary: Contact) -> Contact:
     extra_emails = [e for e in secondary.emails if e.value.lower() not in seen_emails]
     result.emails = list(result.emails) + extra_emails
 
+    # Phones are assumed to be E.164-normalized before merge (enforced at create/update).
     seen_phones = {p.value for p in result.phones}
     extra_phones = [p for p in secondary.phones if p.value not in seen_phones]
     result.phones = list(result.phones) + extra_phones

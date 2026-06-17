@@ -56,6 +56,7 @@ def test_merge_contact_success(client):
     sent = put_route.calls.last.request.content.decode("utf-8")
     assert "X-CUSTOM:keep-me" in sent
     assert delete_route.called
+    assert str(delete_route.calls.last.request.url).endswith("uid-secondary.vcf")
 
 
 def test_merge_contact_same_uid_is_422(client):
