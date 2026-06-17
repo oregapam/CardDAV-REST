@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from app.carddav import build_search_xml, parse_addressbooks, parse_multistatus
+from app.carddav import build_search_xml, parse_addressbooks, parse_multistatus, parse_stat_propfind
 
 C = "{urn:ietf:params:xml:ns:carddav}"
 D = "{DAV:}"
@@ -118,8 +118,6 @@ def test_parse_addressbooks_empty_principal():
     assert parse_addressbooks(xml, PRINCIPAL_URL) == []
 
 
-from app.carddav import parse_stat_propfind
-
 STAT_PROPFIND_TWO = (
     '<?xml version="1.0"?>'
     '<d:multistatus xmlns:d="DAV:">'
@@ -172,6 +170,7 @@ STAT_PROPFIND_NO_CONTENTLENGTH = (
     '<d:href>/dav.php/addressbooks/testuser/default/uid1.vcf</d:href>'
     '<d:propstat><d:prop>'
     '<d:getetag>"etag-1"</d:getetag>'
+    '<d:getlastmodified>Mon, 17 Jun 2026 14:00:00 GMT</d:getlastmodified>'
     '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
     '</d:response>'
     '</d:multistatus>'
@@ -184,16 +183,11 @@ def test_parse_stat_propfind_count_and_size():
     assert total_size == 768
 
 
-def test_parse_stat_propfind_last_modified():
-    _, last_mod, _, _ = parse_stat_propfind(STAT_PROPFIND_TWO)
-    assert last_mod is not None
-    assert last_mod.startswith("2026-06-17")
-
-
-def test_parse_stat_propfind_oldest_modified():
-    _, _, oldest_mod, _ = parse_stat_propfind(STAT_PROPFIND_TWO)
-    assert oldest_mod is not None
-    assert oldest_mod.startswith("2024-01-15")
+def test_parse_stat_propfind_dates_two_contacts():
+    _, last_mod, oldest_mod, _ = parse_stat_propfind(STAT_PROPFIND_TWO)
+    assert last_mod != oldest_mod
+    assert last_mod == "2026-06-17T14:00:00+00:00"
+    assert oldest_mod == "2024-01-15T10:00:00+00:00"
 
 
 def test_parse_stat_propfind_empty_book():
@@ -205,6 +199,8 @@ def test_parse_stat_propfind_empty_book():
 
 
 def test_parse_stat_propfind_no_content_length():
-    count, _, _, total_size = parse_stat_propfind(STAT_PROPFIND_NO_CONTENTLENGTH)
+    count, last_mod, oldest_mod, total_size = parse_stat_propfind(STAT_PROPFIND_NO_CONTENTLENGTH)
     assert count == 1
     assert total_size == 0
+    assert last_mod is not None
+    assert oldest_mod is not None
