@@ -176,6 +176,18 @@ STAT_PROPFIND_NO_CONTENTLENGTH = (
     '</d:multistatus>'
 )
 
+STAT_PROPFIND_EMPTY_LEADS = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:">'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/leads/</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getlastmodified>Mon, 17 Jun 2026 14:00:00 GMT</d:getlastmodified>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '</d:multistatus>'
+)
+
 
 def test_parse_stat_propfind_count_and_size():
     count, last_mod, oldest_mod, total_size = parse_stat_propfind(STAT_PROPFIND_TWO)

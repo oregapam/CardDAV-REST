@@ -2,7 +2,7 @@ import httpx
 import respx
 
 from tests.conftest import BASE, PRINCIPAL
-from tests.test_carddav_xml import PROPFIND_ADDRESSBOOKS, STAT_PROPFIND_EMPTY, STAT_PROPFIND_TWO
+from tests.test_carddav_xml import PROPFIND_ADDRESSBOOKS, STAT_PROPFIND_EMPTY, STAT_PROPFIND_EMPTY_LEADS, STAT_PROPFIND_TWO
 
 LEADS_URL = PRINCIPAL + "leads/"
 
@@ -54,7 +54,7 @@ def test_stats_two_books_aggregates_total(client):
         return_value=httpx.Response(207, text=STAT_PROPFIND_TWO)
     )
     respx.route(method="PROPFIND", url=LEADS_URL).mock(
-        return_value=httpx.Response(207, text=STAT_PROPFIND_EMPTY)
+        return_value=httpx.Response(207, text=STAT_PROPFIND_EMPTY_LEADS)
     )
     resp = client.get("/api/stats")
     assert resp.status_code == 200
