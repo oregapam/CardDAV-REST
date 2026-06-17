@@ -202,5 +202,6 @@ def test_parse_stat_propfind_no_content_length():
     count, last_mod, oldest_mod, total_size = parse_stat_propfind(STAT_PROPFIND_NO_CONTENTLENGTH)
     assert count == 1
     assert total_size == 0
-    assert last_mod is not None
-    assert oldest_mod is not None
+    assert last_mod == "2026-06-17T14:00:00+00:00"
+    assert oldest_mod == "2026-06-17T14:00:00+00:00"
+    assert last_mod == oldest_mod
