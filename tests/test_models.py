@@ -131,6 +131,15 @@ def test_merge_scalar_secondary_fills_empty():
     assert result.lastname == "Kis"
 
 
+def test_merge_scalar_secondary_fills_multiple_empty_fields():
+    primary = Contact(firstname="Anna", prefix="", title="", birthday="")
+    secondary = Contact(firstname="Anna", prefix="Dr.", title="Engineer", birthday="1990-01-01")
+    result = merge_contacts(primary, secondary)
+    assert result.prefix == "Dr."
+    assert result.title == "Engineer"
+    assert result.birthday == "1990-01-01"
+
+
 def test_merge_emails_union():
     primary = Contact(emails=[TypedValue(type="work", value="anna@ceg.hu")])
     secondary = Contact(emails=[TypedValue(type="home", value="anna@gmail.com")])
@@ -153,6 +162,7 @@ def test_merge_emails_dedup_case_insensitive():
     secondary = Contact(emails=[TypedValue(type="home", value="anna@ceg.hu")])
     result = merge_contacts(primary, secondary)
     assert len(result.emails) == 1
+    assert result.emails[0].value == "Anna@Ceg.Hu"  # primary value preserved
 
 
 def test_merge_phones_union():
