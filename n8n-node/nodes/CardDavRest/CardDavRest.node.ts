@@ -157,30 +157,44 @@ export class CardDavRest implements INodeType {
           const addressBook = this.getNodeParameter('addressBook', i) as string;
 
           if (operation === 'list') {
-            const limit = this.getNodeParameter('limit', i) as number;
-            const offset = this.getNodeParameter('offset', i) as number;
+            const returnAll = this.getNodeParameter('returnAll', i) as boolean;
             const q = this.getNodeParameter('q', i) as string;
-            const qs: IDataObject = { limit, offset };
-            if (q) qs.q = q;
-            const page = (await apiRequest.call(
-              this,
-              'GET',
-              `/api/addressbooks/${addressBook}/contacts`,
-              undefined,
-              qs,
-            )) as { items: IDataObject[]; total: number; warning?: string };
-            if (page.items.length === 0) {
-              responseData = [{
-                _total: page.total,
-                _offset: offset,
-                _warning: page.warning ?? null,
-              }];
+            type Page = { items: IDataObject[]; total: number; warning?: string };
+
+            if (returnAll) {
+              const PAGE_SIZE = 1000;
+              let currentOffset = 0;
+              const allItems: IDataObject[] = [];
+              let total = 0;
+              do {
+                const qs: IDataObject = { limit: PAGE_SIZE, offset: currentOffset };
+                if (q) qs.q = q;
+                const page = (await apiRequest.call(
+                  this, 'GET', `/api/addressbooks/${addressBook}/contacts`, undefined, qs,
+                )) as Page;
+                total = page.total;
+                allItems.push(...page.items);
+                currentOffset += PAGE_SIZE;
+              } while (currentOffset < total);
+              const mappedItems = allItems.map((item) => ({ ...item, _total: total }));
+              responseData = mappedItems.length > 0 ? mappedItems : [{ _total: 0 }];
             } else {
-              responseData = page.items.map((item) => ({
-                ...item,
-                _total: page.total,
-                ...(page.warning ? { _warning: page.warning } : {}),
-              }));
+              const limit = this.getNodeParameter('limit', i) as number;
+              const offset = this.getNodeParameter('offset', i) as number;
+              const qs: IDataObject = { limit, offset };
+              if (q) qs.q = q;
+              const page = (await apiRequest.call(
+                this, 'GET', `/api/addressbooks/${addressBook}/contacts`, undefined, qs,
+              )) as Page;
+              if (page.items.length === 0) {
+                responseData = [{ _total: page.total, _offset: offset, _warning: page.warning ?? null }];
+              } else {
+                responseData = page.items.map((item) => ({
+                  ...item,
+                  _total: page.total,
+                  ...(page.warning ? { _warning: page.warning } : {}),
+                }));
+              }
             }
           } else if (operation === 'get') {
             const uid = this.getNodeParameter('uid', i) as string;

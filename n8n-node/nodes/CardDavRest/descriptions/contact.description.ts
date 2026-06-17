@@ -78,11 +78,21 @@ export const contactFields: INodeProperties[] = [
     description: 'Unique identifier of the contact (UUID)',
   },
   {
+    displayName: 'Return All',
+    name: 'returnAll',
+    type: 'boolean',
+    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    default: false,
+    description: 'Whether to return all contacts by automatically paginating through results',
+  },
+  {
     displayName: 'Limit',
     name: 'limit',
     type: 'number',
     typeOptions: { minValue: 1, maxValue: 1000 },
-    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    displayOptions: {
+      show: { resource: ['contact'], operation: ['list'], returnAll: [false] },
+    },
     default: 50,
     description: 'Maximum number of contacts to return',
   },
@@ -91,7 +101,9 @@ export const contactFields: INodeProperties[] = [
     name: 'offset',
     type: 'number',
     typeOptions: { minValue: 0 },
-    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    displayOptions: {
+      show: { resource: ['contact'], operation: ['list'], returnAll: [false] },
+    },
     default: 0,
     description: 'Number of contacts to skip (for pagination)',
   },
