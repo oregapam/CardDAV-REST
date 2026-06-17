@@ -10,16 +10,23 @@ n8n community node for the [CardDAV REST](https://github.com/mark/CardDAV-REST) 
 
 ### Local testing with Docker
 
-The `n8n-node/` directory includes a `docker-compose.yml` that starts n8n with the node pre-loaded. Build the node first, then bring it up:
+The `n8n-node/` directory includes a `Dockerfile` and `docker-compose.yml` that build a custom n8n image with the node baked in. Build the TypeScript first, then build and start the image:
 
 ```bash
 cd n8n-node
 npm install
 npm run build
+docker compose build
 docker compose up -d
 ```
 
-n8n will be available at `http://localhost:5678`.
+n8n will be available at `http://localhost:5678`. The **CardDAV REST** node will appear in the node picker without any additional installation step — do **not** use Settings → Community Nodes → Install.
+
+After changing the node source, rebuild:
+
+```bash
+npm run build && docker compose build && docker compose up -d
+```
 
 To test against a running CardDAV REST adapter (started via the root `docker-compose.yml`), set the credential **Base URL** to:
 
@@ -38,6 +45,7 @@ docker compose up -d          # from repo root
 # Terminal 2 — n8n with the community node
 cd n8n-node
 npm run build
+docker compose build
 docker compose up -d
 ```
 
