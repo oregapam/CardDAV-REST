@@ -319,3 +319,59 @@ describe('execute — contact: update + patch', () => {
     );
   });
 });
+
+describe('execute — contact: delete + search', () => {
+  const node = new CardDavRest();
+
+  it('delete calls DELETE /api/addressbooks/{book}/contacts/{uid}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'delete',
+      { addressBook: 'default', uid: 'uid-del' },
+      { status: 'deleted', uid: 'uid-del' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'DELETE',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-del',
+      }),
+    );
+  });
+
+  it('search calls POST .../contacts/search with body', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'search',
+      {
+        addressBook: 'default',
+        name: 'Alice',
+        email: '',
+        phone: '',
+        matchCondition: 'allof',
+      },
+      { exists: true, match_count: 1, matches: [] },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/search',
+        body: expect.objectContaining({ name: 'Alice', match_condition: 'allof' }),
+      }),
+    );
+  });
+
+  it('search omits empty fields from body', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'search',
+      { addressBook: 'default', name: '', email: 'a@b.hu', phone: '', matchCondition: 'anyof' },
+      { exists: false, match_count: 0, matches: [] },
+    );
+    await node.execute.call(ctx);
+    const body = mockHttpRequest.mock.calls[0][0].body as IDataObject;
+    expect(body).not.toHaveProperty('name');
+    expect(body).toHaveProperty('email', 'a@b.hu');
+  });
+});

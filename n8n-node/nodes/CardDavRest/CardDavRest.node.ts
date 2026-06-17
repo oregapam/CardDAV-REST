@@ -251,6 +251,28 @@ export class CardDavRest implements INodeType {
               `/api/addressbooks/${addressBook}/contacts/${uid}`,
               patchBody,
             );
+          } else if (operation === 'delete') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            responseData = await apiRequest.call(
+              this,
+              'DELETE',
+              `/api/addressbooks/${addressBook}/contacts/${uid}`,
+            );
+          } else if (operation === 'search') {
+            const name = this.getNodeParameter('name', i) as string;
+            const email = this.getNodeParameter('email', i) as string;
+            const phone = this.getNodeParameter('phone', i) as string;
+            const matchCondition = this.getNodeParameter('matchCondition', i) as string;
+            const body: IDataObject = { match_condition: matchCondition };
+            if (name) body.name = name;
+            if (email) body.email = email;
+            if (phone) body.phone = phone;
+            responseData = await apiRequest.call(
+              this,
+              'POST',
+              `/api/addressbooks/${addressBook}/contacts/search`,
+              body,
+            );
           } else {
             throw new NodeOperationError(
               this.getNode(),

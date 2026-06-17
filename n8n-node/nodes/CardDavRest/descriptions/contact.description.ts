@@ -313,4 +313,47 @@ export const contactFields: INodeProperties[] = [
       },
     ],
   },
+  {
+    displayName: 'Name',
+    name: 'name',
+    type: 'string',
+    displayOptions: { show: { resource: ['contact'], operation: ['search'] } },
+    default: '',
+    description: 'Partial name match (word-order independent for multi-word queries)',
+  },
+  {
+    displayName: 'Email',
+    name: 'email',
+    type: 'string',
+    displayOptions: { show: { resource: ['contact'], operation: ['search'] } },
+    default: '',
+    description: 'Exact email match',
+  },
+  {
+    displayName: 'Phone',
+    name: 'phone',
+    type: 'string',
+    displayOptions: { show: { resource: ['contact'], operation: ['search'] } },
+    default: '',
+    description: 'Partial phone match',
+  },
+  {
+    displayName: 'Match Condition',
+    name: 'matchCondition',
+    type: 'options',
+    displayOptions: { show: { resource: ['contact'], operation: ['search'] } },
+    options: [
+      {
+        name: 'All Of (AND)',
+        value: 'allof',
+        description: 'Contact must match every provided filter',
+      },
+      {
+        name: 'Any Of (OR)',
+        value: 'anyof',
+        description: 'Contact must match at least one filter',
+      },
+    ],
+    default: 'allof',
+  },
 ];
