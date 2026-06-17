@@ -8,7 +8,40 @@ n8n community node for the [CardDAV REST](https://github.com/mark/CardDAV-REST) 
 
 **Settings → Community Nodes → Install** → package name: `n8n-nodes-carddav-rest`
 
-### Local development
+### Local testing with Docker
+
+The `n8n-node/` directory includes a `docker-compose.yml` that starts n8n with the node pre-loaded. Build the node first, then bring it up:
+
+```bash
+cd n8n-node
+npm install
+npm run build
+docker compose up -d
+```
+
+n8n will be available at `http://localhost:5678`.
+
+To test against a running CardDAV REST adapter (started via the root `docker-compose.yml`), set the credential **Base URL** to:
+
+```
+http://host.docker.internal:8000
+```
+
+This works on macOS and Windows out of the box. On Linux, `extra_hosts: host.docker.internal:host-gateway` is already set in the compose file — no extra configuration needed.
+
+**Full local stack (both compose files):**
+
+```bash
+# Terminal 1 — adapter + Baïkal
+docker compose up -d          # from repo root
+
+# Terminal 2 — n8n with the community node
+cd n8n-node
+npm run build
+docker compose up -d
+```
+
+### Local development (hot reload)
 
 ```bash
 cd n8n-node
@@ -16,17 +49,7 @@ npm install
 npm run dev
 ```
 
-This starts an n8n instance with the node loaded at `http://localhost:5678`.
-
-Alternatively, mount it into a Docker-based n8n instance:
-
-```bash
-docker run -it --rm \
-  -p 5678:5678 \
-  -v "$(pwd)/n8n-node:/home/node/.n8n/custom/n8n-nodes-carddav-rest" \
-  -e N8N_CUSTOM_EXTENSIONS=/home/node/.n8n/custom \
-  n8nio/n8n
-```
+This starts an n8n instance with the node loaded at `http://localhost:5678` and rebuilds automatically on file changes.
 
 ## Authentication
 
