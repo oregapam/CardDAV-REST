@@ -178,3 +178,9 @@ class StatsResponse(BaseModel):
     total_contacts: int
     total_size_bytes: int
     addressbooks: list[AddressbookStats]
+
+
+class ConfigResponse(BaseModel):
+    name_format: str
+    default_region: str
+    required_fields: list[str]
