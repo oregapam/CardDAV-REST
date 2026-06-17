@@ -38,7 +38,18 @@ def build_search_xml(
     if phone:
         add_filter("TEL", phone, "contains")
     if name:
-        add_filter("FN", name, "contains")
+        words = name.split()
+        if len(words) <= 1:
+            add_filter("FN", name, "contains")
+        else:
+            pf = ET.SubElement(filt, f"{_C}prop-filter", {"name": "FN", "test": "allof"})
+            for word in words:
+                tm = ET.SubElement(
+                    pf,
+                    f"{_C}text-match",
+                    {"collation": "i;unicode-casemap", "match-type": "contains"},
+                )
+                tm.text = word
 
     return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 

@@ -33,6 +33,18 @@ def test_single_filter_anyof():
     assert [pf.get("name") for pf in pfs] == ["FN"]
 
 
+def test_multiword_name_produces_allof_prop_filter():
+    root = ET.fromstring(build_search_xml(email=None, phone=None, name="pokémon oláh", match_condition="anyof"))
+    pfs = root.findall(f"{C}filter/{C}prop-filter")
+    assert len(pfs) == 1
+    assert pfs[0].get("name") == "FN"
+    assert pfs[0].get("test") == "allof"
+    tms = pfs[0].findall(f"{C}text-match")
+    assert len(tms) == 2
+    assert [tm.text for tm in tms] == ["pokémon", "oláh"]
+    assert all(tm.get("match-type") == "contains" for tm in tms)
+
+
 def test_search_value_is_escaped_not_injected():
     xml_bytes = build_search_xml(email='"]><evil/>', phone=None, name=None, match_condition="allof")
     root = ET.fromstring(xml_bytes)  # must stay well-formed
