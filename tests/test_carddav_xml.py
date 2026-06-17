@@ -116,3 +116,95 @@ def test_parse_addressbooks_empty_principal():
         "</d:multistatus>"
     )
     assert parse_addressbooks(xml, PRINCIPAL_URL) == []
+
+
+from app.carddav import parse_stat_propfind
+
+STAT_PROPFIND_TWO = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:">'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getlastmodified>Mon, 17 Jun 2026 14:00:00 GMT</d:getlastmodified>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/uid1.vcf</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getetag>"etag-1"</d:getetag>'
+    '<d:getlastmodified>Mon, 17 Jun 2026 14:00:00 GMT</d:getlastmodified>'
+    '<d:getcontentlength>512</d:getcontentlength>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/uid2.vcf</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getetag>"etag-2"</d:getetag>'
+    '<d:getlastmodified>Tue, 15 Jan 2024 10:00:00 GMT</d:getlastmodified>'
+    '<d:getcontentlength>256</d:getcontentlength>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '</d:multistatus>'
+)
+
+STAT_PROPFIND_EMPTY = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:">'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getlastmodified>Mon, 17 Jun 2026 14:00:00 GMT</d:getlastmodified>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '</d:multistatus>'
+)
+
+STAT_PROPFIND_NO_CONTENTLENGTH = (
+    '<?xml version="1.0"?>'
+    '<d:multistatus xmlns:d="DAV:">'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/</d:href>'
+    '<d:propstat><d:prop>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '<d:response>'
+    '<d:href>/dav.php/addressbooks/testuser/default/uid1.vcf</d:href>'
+    '<d:propstat><d:prop>'
+    '<d:getetag>"etag-1"</d:getetag>'
+    '</d:prop><d:status>HTTP/1.1 200 OK</d:status></d:propstat>'
+    '</d:response>'
+    '</d:multistatus>'
+)
+
+
+def test_parse_stat_propfind_count_and_size():
+    count, last_mod, oldest_mod, total_size = parse_stat_propfind(STAT_PROPFIND_TWO)
+    assert count == 2
+    assert total_size == 768
+
+
+def test_parse_stat_propfind_last_modified():
+    _, last_mod, _, _ = parse_stat_propfind(STAT_PROPFIND_TWO)
+    assert last_mod is not None
+    assert last_mod.startswith("2026-06-17")
+
+
+def test_parse_stat_propfind_oldest_modified():
+    _, _, oldest_mod, _ = parse_stat_propfind(STAT_PROPFIND_TWO)
+    assert oldest_mod is not None
+    assert oldest_mod.startswith("2024-01-15")
+
+
+def test_parse_stat_propfind_empty_book():
+    count, last_mod, oldest_mod, total_size = parse_stat_propfind(STAT_PROPFIND_EMPTY)
+    assert count == 0
+    assert last_mod is None
+    assert oldest_mod is None
+    assert total_size == 0
+
+
+def test_parse_stat_propfind_no_content_length():
+    count, _, _, total_size = parse_stat_propfind(STAT_PROPFIND_NO_CONTENTLENGTH)
+    assert count == 1
+    assert total_size == 0
