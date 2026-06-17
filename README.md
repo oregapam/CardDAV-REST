@@ -55,8 +55,11 @@ below for full request/response detail on each.
 | `GET` | `/api/addressbooks/{book}/contacts/{uid}` | Get a contact |
 | `PUT` | `/api/addressbooks/{book}/contacts/{uid}` | Update a contact |
 | `PATCH` | `/api/addressbooks/{book}/contacts/{uid}` | Partially update a contact |
+| `POST` | `/api/addressbooks/{book}/contacts/{uid}/merge/{other_uid}` | Merge two contacts (keep one, delete other) |
 | `POST` | `/api/addressbooks/{book}/contacts/{uid}/move/{target_book}` | Move a contact to another book |
 | `DELETE` | `/api/addressbooks/{book}/contacts/{uid}` | Delete a contact |
+| `GET` | `/api/stats` | Contact counts, sizes, and timestamps per address book |
+| `GET` | `/api/config` | Active runtime configuration (name format, required fields, region) |
 | `GET` | `/health` | Health check (no API key) |
 
 ---
@@ -185,7 +188,7 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
 |--------|-----------|-------|
 | `email` | Exact match | Case-insensitive |
 | `phone` | Contains | Partial number works, e.g. `"1234567"`. Normalized to E.164 before searching — see [Phone number normalization](#phone-number-normalization) |
-| `name` | Contains | Matches against the full name (FN field) |
+| `name` | Contains, word-order-independent | Multi-word queries require all words to appear in the full name, in any order. `"pokémon ol"` matches `"Oláh Pokémon"`. |
 
 **Response `200`**
 
@@ -373,7 +376,7 @@ curl -X PATCH http://localhost:8000/api/addressbooks/leads/contacts/62352c20-...
 
 At least one field must be present in the body, or the request returns `422`.
 
-`firstname`/`lastname` and `REQUIRED_FIELDS` (see above) are validated against
+`firstname`/`lastname` and `REQUIRED_FIELDS` (see below) are validated against
 the **resulting** contact, not the patch body alone — so patching just `org`
 on a contact that already has a name succeeds without resending it. Validation
 only fails if the patch itself drives the contact into an invalid state (e.g.
@@ -383,6 +386,30 @@ clearing both `firstname` and `lastname`, or clearing a field listed in
 **Response `200`** `{"status": "updated", "uid": "..."}` · **`404`** not found
 · **`409`** ETag mismatch · **`422`** empty body, invalid phone number, or the
 resulting contact is missing a required field.
+
+---
+
+### POST /api/addressbooks/{book}/contacts/{uid}/merge/{other_uid}
+
+Merges two contacts into one. The contact at `uid` is kept and updated with
+data from `other_uid`; the contact at `other_uid` is then deleted.
+
+Merge strategy: structured fields (`firstname`, `lastname`, `org`, etc.) are
+filled from `other_uid` only if the primary contact has them empty. List fields
+(`emails`, `phones`, `addresses`, `urls`, `categories`) are union-merged —
+duplicates are deduplicated (emails by lowercase value, phones by exact E.164
+value, addresses by street+city+zip).
+
+```bash
+curl -X POST \
+  "http://localhost:8000/api/addressbooks/leads/contacts/62352c20-.../merge/aabbcc11-..." \
+  -H "X-API-Key: $API_KEY"
+```
+
+**Response `200`** — the merged contact as a full `ContactOut` object.
+
+**Response `404`** if either UID does not exist.  
+**Response `422`** if `uid` and `other_uid` are the same.
 
 ---
 
@@ -423,6 +450,78 @@ curl -X DELETE \
 ```
 
 **Response `200`** `{"status": "deleted", "uid": "..."}` · **`404`** not found.
+
+---
+
+### GET /api/stats
+
+Returns contact counts, total vCard sizes, and modification timestamps for each
+address book — without downloading vCard content. Useful for n8n dashboards and
+monitoring.
+
+```bash
+curl http://localhost:8000/api/stats \
+  -H "X-API-Key: $API_KEY"
+```
+
+**Response `200`**
+
+```json
+{
+  "total_contacts": 150,
+  "total_size_bytes": 76800,
+  "addressbooks": [
+    {
+      "name": "default",
+      "displayname": "Default",
+      "contact_count": 42,
+      "last_modified": "2026-06-17T14:00:00+00:00",
+      "oldest_modified": "2024-01-15T10:00:00+00:00",
+      "total_size_bytes": 76800
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `total_contacts` | Sum of all contacts across all address books |
+| `total_size_bytes` | Sum of all vCard file sizes in bytes |
+| `contact_count` | Number of contacts in this address book |
+| `last_modified` | ISO 8601 timestamp of the most recently modified contact, or `null` if empty |
+| `oldest_modified` | ISO 8601 timestamp of the least recently modified contact, or `null` if empty |
+| `total_size_bytes` | Total vCard byte size for this address book |
+
+**Response `502`** if the CardDAV server is unreachable.
+
+---
+
+### GET /api/config
+
+Returns the active runtime configuration. Useful for n8n nodes that need to
+build dynamic forms — especially `required_fields`, which is not visible in the
+OpenAPI schema.
+
+```bash
+curl http://localhost:8000/api/config \
+  -H "X-API-Key: $API_KEY"
+```
+
+**Response `200`**
+
+```json
+{
+  "name_format": "eastern",
+  "default_region": "HU",
+  "required_fields": ["emails", "phones"]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `name_format` | Active `NAME_FORMAT` value (`western`, `eastern`, or `eastern_full`) |
+| `default_region` | Active `DEFAULT_COUNTRY_CODE` value |
+| `required_fields` | Active `REQUIRED_FIELDS` as a list; empty list if not configured |
 
 ---
 
@@ -514,8 +613,9 @@ match a name or email rather than a phone number.
 
 Beyond the built-in rule that `firstname` or `lastname` must be present,
 operators can require additional fields via `REQUIRED_FIELDS` (comma-separated
-list of contact field names). Applies to both `POST .../contacts` (create) and
-`PUT .../contacts/{uid}` (update).
+list of contact field names). Applies to `POST .../contacts` (create),
+`PUT .../contacts/{uid}` (full update), and `PATCH .../contacts/{uid}` (partial
+update — validated against the resulting contact state, not just the patch body).
 
 ```
 REQUIRED_FIELDS=emails,phones
