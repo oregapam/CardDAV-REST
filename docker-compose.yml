@@ -1,6 +1,6 @@
 services:
   baikal:
-    image: ckulka/baikal:nginx
+    image: ghcr.io/aalmenar/baikal:nginx
     restart: unless-stopped
     ports:
       - "8800:80"
