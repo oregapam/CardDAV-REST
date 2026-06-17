@@ -96,10 +96,35 @@ export class CardDavRest implements INodeType {
             responseData = await apiRequest.call(this, 'GET', '/api/config');
           }
         } else if (resource === 'contact') {
-          throw new NodeOperationError(
-            this.getNode(),
-            `Operation "${operation}" not yet implemented`,
-          );
+          const addressBook = this.getNodeParameter('addressBook', i) as string;
+
+          if (operation === 'list') {
+            const limit = this.getNodeParameter('limit', i) as number;
+            const offset = this.getNodeParameter('offset', i) as number;
+            const q = this.getNodeParameter('q', i) as string;
+            const qs: IDataObject = { limit, offset };
+            if (q) qs.q = q;
+            const page = (await apiRequest.call(
+              this,
+              'GET',
+              `/api/addressbooks/${addressBook}/contacts`,
+              undefined,
+              qs,
+            )) as { items: IDataObject[] };
+            responseData = page.items;
+          } else if (operation === 'get') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            responseData = await apiRequest.call(
+              this,
+              'GET',
+              `/api/addressbooks/${addressBook}/contacts/${uid}`,
+            );
+          } else {
+            throw new NodeOperationError(
+              this.getNode(),
+              `Operation "${operation}" not yet implemented`,
+            );
+          }
         }
       } catch (error) {
         if (this.continueOnFail()) {

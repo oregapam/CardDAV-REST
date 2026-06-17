@@ -51,4 +51,57 @@ export const contactOperations: INodeProperties[] = [
   },
 ];
 
-export const contactFields: INodeProperties[] = [];
+export const contactFields: INodeProperties[] = [
+  {
+    displayName: 'Address Book Name or ID',
+    name: 'addressBook',
+    type: 'options',
+    typeOptions: { loadOptionsMethod: 'getAddressBooks' },
+    required: true,
+    displayOptions: { show: { resource: ['contact'] } },
+    default: '',
+    description:
+      'Choose from the list, or specify a name using an expression',
+  },
+  {
+    displayName: 'Contact UID',
+    name: 'uid',
+    type: 'string',
+    required: true,
+    displayOptions: {
+      show: {
+        resource: ['contact'],
+        operation: ['get', 'update', 'patch', 'delete', 'merge', 'move', 'getVcard'],
+      },
+    },
+    default: '',
+    description: 'Unique identifier of the contact (UUID)',
+  },
+  {
+    displayName: 'Limit',
+    name: 'limit',
+    type: 'number',
+    typeOptions: { minValue: 1, maxValue: 1000 },
+    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    default: 50,
+    description: 'Maximum number of contacts to return',
+  },
+  {
+    displayName: 'Offset',
+    name: 'offset',
+    type: 'number',
+    typeOptions: { minValue: 0 },
+    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    default: 0,
+    description: 'Number of contacts to skip (for pagination)',
+  },
+  {
+    displayName: 'Quick Search',
+    name: 'q',
+    type: 'string',
+    displayOptions: { show: { resource: ['contact'], operation: ['list'] } },
+    default: '',
+    description:
+      'Filter contacts by name, email, or phone (case-insensitive, partial match). Leave empty to return all.',
+  },
+];

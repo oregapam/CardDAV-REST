@@ -135,3 +135,53 @@ describe('execute — addressbook, stats, config', () => {
     );
   });
 });
+
+describe('execute — contact: list + get', () => {
+  const node = new CardDavRest();
+
+  it('list calls GET /api/addressbooks/{book}/contacts with qs', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'list',
+      { addressBook: 'default', limit: 25, offset: 10, q: '' },
+      { items: [], total: 0, limit: 25, offset: 10 },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts',
+        qs: expect.objectContaining({ limit: 25, offset: 10 }),
+      }),
+    );
+  });
+
+  it('list passes q param when provided', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'list',
+      { addressBook: 'default', limit: 50, offset: 0, q: 'alice' },
+      { items: [], total: 0, limit: 50, offset: 0 },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ qs: expect.objectContaining({ q: 'alice' }) }),
+    );
+  });
+
+  it('get calls GET /api/addressbooks/{book}/contacts/{uid}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'get',
+      { addressBook: 'default', uid: 'abc-123' },
+      { uid: 'abc-123', firstname: 'Alice' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/abc-123',
+      }),
+    );
+  });
+});
