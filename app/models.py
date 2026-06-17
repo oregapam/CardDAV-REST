@@ -75,6 +75,37 @@ def apply_contact_patch(existing: Contact, patch: ContactPatch) -> None:
         setattr(existing, name, value if value is not None else _FIELD_DEFAULTS[name])
 
 
+def merge_contacts(primary: Contact, secondary: Contact) -> Contact:
+    result = primary.model_copy()
+
+    for field in ("firstname", "lastname", "middlename", "prefix", "suffix",
+                  "org", "title", "birthday", "note", "photo"):
+        if not getattr(result, field):
+            setattr(result, field, getattr(secondary, field))
+
+    seen_emails = {e.value.lower() for e in result.emails}
+    extra_emails = [e for e in secondary.emails if e.value.lower() not in seen_emails]
+    result.emails = list(result.emails) + extra_emails
+
+    seen_phones = {p.value for p in result.phones}
+    extra_phones = [p for p in secondary.phones if p.value not in seen_phones]
+    result.phones = list(result.phones) + extra_phones
+
+    seen_addrs = {(a.street, a.city, a.zip) for a in result.addresses}
+    extra_addrs = [a for a in secondary.addresses if (a.street, a.city, a.zip) not in seen_addrs]
+    result.addresses = list(result.addresses) + extra_addrs
+
+    seen_urls = set(result.urls)
+    extra_urls = [u for u in secondary.urls if u not in seen_urls]
+    result.urls = list(result.urls) + extra_urls
+
+    seen_cats = set(result.categories)
+    extra_cats = [c for c in secondary.categories if c not in seen_cats]
+    result.categories = list(result.categories) + extra_cats
+
+    return result
+
+
 class ContactIn(Contact):
     @model_validator(mode="after")
     def require_name(self) -> "ContactIn":
