@@ -18,5 +18,5 @@
 
 ## Megfigyelhetőség
 
-- [ ] **`GET /api/stats`** — kontaktok száma, utolsó módosítás (hasznos n8n dashboardhoz)
+- [x] **`GET /api/stats`** — kontaktok száma, utolsó módosítás (hasznos n8n dashboardhoz)
 - [ ] **`GET /api/config`** — visszaadja az aktív `required_fields`, `default_region`, `name_format` beállításokat, hogy egy n8n node dinamikusan tudjon formot építeni (a `REQUIRED_FIELDS` jelenleg nem látszik az OpenAPI sémában)
