@@ -30,6 +30,8 @@ services:
       BAIKAL_PASS: ${BAIKAL_PASS}
       API_KEY: ${API_KEY}
       NAME_FORMAT: ${NAME_FORMAT:-western}
+      DEFAULT_COUNTRY_CODE: ${DEFAULT_COUNTRY_CODE:-HU}
+      REQUIRED_FIELDS: ${REQUIRED_FIELDS:-}
     networks:
       - dav
     healthcheck:
