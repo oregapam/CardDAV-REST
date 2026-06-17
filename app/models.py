@@ -1,11 +1,18 @@
 from typing import Literal, Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class TypedValue(BaseModel):
     type: str = "other"
     value: str
+
+    @field_validator("value")
+    @classmethod
+    def value_not_empty(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("value must not be empty")
+        return v
 
 
 class Address(BaseModel):

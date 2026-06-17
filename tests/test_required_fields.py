@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from app.models import Address, Contact, TypedValue
 from app.required_fields import missing_required_fields
 
@@ -27,9 +30,9 @@ def test_empty_typed_value_list_is_missing():
     assert missing_required_fields(contact, ("emails",)) == ["emails"]
 
 
-def test_typed_value_list_with_blank_value_is_missing():
-    contact = Contact(emails=[TypedValue(value="")])
-    assert missing_required_fields(contact, ("emails",)) == ["emails"]
+def test_typed_value_with_blank_value_raises():
+    with pytest.raises(ValidationError, match="value must not be empty"):
+        TypedValue(value="")
 
 
 def test_typed_value_list_with_real_value_is_present():

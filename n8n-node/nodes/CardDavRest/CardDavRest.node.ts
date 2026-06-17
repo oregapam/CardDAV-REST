@@ -54,8 +54,8 @@ function buildContactBody(
   const body: IDataObject = {
     firstname,
     lastname,
-    phones: phonesRaw.phone ?? [],
-    emails: emailsRaw.email ?? [],
+    phones: (phonesRaw.phone ?? []).filter((p) => p.value?.trim()),
+    emails: (emailsRaw.email ?? []).filter((e) => e.value?.trim()),
     addresses: addressesRaw.address ?? [],
   };
 
@@ -256,14 +256,18 @@ export class CardDavRest implements INodeType {
             const phonesRaw = this.getNodeParameter('phones', i) as {
               phone?: Array<{ type: string; value: string }>;
             };
-            if (phonesRaw.phone?.length) {
-              patchBody.phones = phonesRaw.phone;
+            const filteredPhones = (phonesRaw.phone ?? []).filter((p) => p.value?.trim());
+            const hasEmptyPhones = (phonesRaw.phone?.length ?? 0) > filteredPhones.length;
+            if (filteredPhones.length) {
+              patchBody.phones = filteredPhones;
             }
             const emailsRaw = this.getNodeParameter('emails', i) as {
               email?: Array<{ type: string; value: string }>;
             };
-            if (emailsRaw.email?.length) {
-              patchBody.emails = emailsRaw.email;
+            const filteredEmails = (emailsRaw.email ?? []).filter((e) => e.value?.trim());
+            const hasEmptyEmails = (emailsRaw.email?.length ?? 0) > filteredEmails.length;
+            if (filteredEmails.length) {
+              patchBody.emails = filteredEmails;
             }
             const addressesRaw = this.getNodeParameter('addresses', i) as {
               address?: unknown[];
@@ -273,9 +277,16 @@ export class CardDavRest implements INodeType {
             }
 
             if (Object.keys(patchBody).length === 0) {
+              if (hasEmptyPhones || hasEmptyEmails) {
+                throw new NodeOperationError(
+                  this.getNode(),
+                  'Phone numbers and email addresses require a value — fill in the number/address or remove the empty entry.',
+                  { itemIndex: i },
+                );
+              }
               throw new NodeOperationError(
                 this.getNode(),
-                'At least one field to update is required. Add fields using the "Fields to Update" collection.',
+                'At least one field to update is required. Use "Fields to Update", "Phone Numbers", "Email Addresses", or "Addresses".',
                 { itemIndex: i },
               );
             }
