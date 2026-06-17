@@ -39,22 +39,69 @@ n8n-node/
 
 ---
 
-## Task 1: Package scaffolding
+## Task 1: Bootstrap from official starter template
 
-**Files:**
-- Create: `n8n-node/package.json`
-- Create: `n8n-node/tsconfig.json`
-- Create: `n8n-node/.npmignore`
+The official `n8n-nodes-starter` repo is the canonical starting point. We clone it,
+copy the result into `n8n-node/`, then strip the example files and adapt the config.
+This ensures `package.json`, `tsconfig.json`, `.eslintrc.js`, and the build pipeline
+are exactly what `@n8n/node-cli` expects — no guessing.
+
+**Files produced:**
+- All of `n8n-node/` (from starter, then trimmed)
 - Modify: `.gitignore` (repo root)
 
-- [ ] **Step 1: Create `n8n-node/package.json`**
+- [ ] **Step 1: Clone the starter into a temp directory**
+
+Run this from the repo root (`CardDAV-REST/`):
+
+```bash
+git clone --depth=1 https://github.com/n8n-io/n8n-nodes-starter.git _n8n_starter
+```
+
+Expected: `_n8n_starter/` appears with the full starter template.
+
+- [ ] **Step 2: Inspect what the starter gives you**
+
+```bash
+ls _n8n_starter/
+ls _n8n_starter/credentials/
+ls _n8n_starter/nodes/
+```
+
+Note the exact directory layout, `package.json` content, `tsconfig.json`, and `.eslintrc.js`.
+Read `_n8n_starter/nodes/ExampleNode/ExampleNode.node.ts` and
+`_n8n_starter/credentials/ExampleCredentials.credentials.ts` to understand the exact
+TypeScript interfaces used (`INodeType`, `ICredentialType`, etc.).
+
+- [ ] **Step 3: Copy the starter into `n8n-node/`**
+
+```bash
+cp -r _n8n_starter/ n8n-node/
+rm -rf _n8n_starter/
+```
+
+- [ ] **Step 4: Delete the example files we will replace**
+
+```bash
+rm -rf n8n-node/nodes/ExampleNode/
+rm -rf n8n-node/nodes/HTTPBin/
+rm    n8n-node/credentials/ExampleCredentials.credentials.ts
+rm    n8n-node/credentials/HttpBinApi.credentials.ts
+# Remove any other example node directories the starter may include
+```
+
+Check `n8n-node/nodes/` and `n8n-node/credentials/` — they should now be empty (or
+contain only subdirectory structure without any .ts files).
+
+- [ ] **Step 5: Update `n8n-node/package.json`**
+
+Edit the following fields in the file the starter created:
 
 ```json
 {
   "name": "n8n-nodes-carddav-rest",
   "version": "0.1.0",
   "description": "n8n community node for CardDAV REST — manage Baïkal contacts from n8n workflows",
-  "license": "MIT",
   "keywords": [
     "n8n-community-node-package",
     "carddav",
@@ -62,96 +109,76 @@ n8n-node/
     "baikal",
     "vcard"
   ],
-  "scripts": {
-    "build": "n8n-node build",
-    "dev": "n8n-node dev",
-    "lint": "n8n-node lint",
-    "lint:fix": "n8n-node lint --fix",
-    "release": "n8n-node release",
-    "test": "jest"
-  },
-  "files": ["dist"],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": ["dist/credentials/CardDavRestApi.credentials.js"],
     "nodes": ["dist/nodes/CardDavRest/CardDavRest.node.js"]
-  },
-  "devDependencies": {
-    "@n8n/node-cli": "*",
-    "@types/jest": "^29.5.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.3.0"
-  },
-  "peerDependencies": {
-    "n8n-workflow": "*"
-  },
-  "jest": {
-    "preset": "ts-jest",
-    "testEnvironment": "node",
-    "roots": ["<rootDir>/tests"],
-    "testMatch": ["**/*.test.ts"],
-    "moduleNameMapper": {
-      "^n8n-workflow$": "<rootDir>/node_modules/n8n-workflow"
-    }
   }
 }
 ```
 
-- [ ] **Step 2: Create `n8n-node/tsconfig.json`**
+Keep everything else the starter provided (`scripts`, `devDependencies`,
+`peerDependencies`, `engines`, etc.) exactly as-is — those are the correct values.
+
+- [ ] **Step 6: Add Jest to devDependencies**
+
+The starter may not include Jest. Add to `devDependencies` in `package.json`:
 
 ```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "target": "es2019",
-    "lib": ["es2019", "es2020", "es2022.error"],
-    "declaration": true,
-    "sourceMap": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "strictNullChecks": true,
-    "outDir": "./dist/"
-  },
-  "include": ["credentials/**/*", "nodes/**/*", "tests/**/*"]
+"@types/jest": "^29.5.0",
+"jest": "^29.5.0",
+"ts-jest": "^29.1.0"
+```
+
+Add to the root of `package.json`:
+
+```json
+"jest": {
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "roots": ["<rootDir>/tests"],
+  "testMatch": ["**/*.test.ts"]
 }
 ```
 
-- [ ] **Step 3: Create `n8n-node/.npmignore`**
+Also add `"test": "jest"` to the `scripts` block.
 
-```
-tests/
-*.test.ts
-tsconfig.json
-.eslintrc.js
-```
+- [ ] **Step 7: Update repo root `.gitignore`**
 
-- [ ] **Step 4: Update repo root `.gitignore`**
-
-Add these lines to the existing `.gitignore` at the repo root:
+Append to `.gitignore` at the repo root:
 
 ```
 n8n-node/dist/
 n8n-node/node_modules/
 ```
 
-- [ ] **Step 5: Install dependencies**
+- [ ] **Step 8: Install dependencies**
 
 ```bash
 cd n8n-node
 npm install
 ```
 
-Expected: `node_modules/` created, no errors. Verify `n8n-workflow` is in `node_modules/` as a transitive dep from `@n8n/node-cli`.
+Expected: `node_modules/` created, no errors. Verify `n8n-workflow` appears
+in `node_modules/`.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 9: Verify the build pipeline works on the empty project**
 
 ```bash
-git add n8n-node/package.json n8n-node/tsconfig.json n8n-node/.npmignore .gitignore
-git commit -m "feat(n8n-node): scaffold TypeScript package"
+npm run build
+```
+
+If `dist/` is created (even empty) without errors, the toolchain is correct.
+If errors appear due to missing source files, that's expected — the nodes and
+credentials directories are empty. Fix by adding empty placeholder `.ts` files
+temporarily, or skip this check and proceed to Task 2.
+
+- [ ] **Step 10: Commit**
+
+```bash
+cd ..  # back to repo root
+git add n8n-node/ .gitignore
+git commit -m "feat(n8n-node): bootstrap from official n8n-nodes-starter template"
 ```
 
 ---
