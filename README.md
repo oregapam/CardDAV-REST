@@ -105,8 +105,8 @@ curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=0" \
 curl "http://localhost:8000/api/addressbooks/leads/contacts?limit=50&offset=50" \
   -H "X-API-Key: $API_KEY"
 
-# Quick search — returns all contacts where name, email, or phone contains "anna"
-curl "http://localhost:8000/api/addressbooks/leads/contacts?q=anna" \
+# Quick search — returns all contacts where name, email, or phone contains "jane"
+curl "http://localhost:8000/api/addressbooks/leads/contacts?q=jane" \
   -H "X-API-Key: $API_KEY"
 ```
 
@@ -121,10 +121,10 @@ curl "http://localhost:8000/api/addressbooks/leads/contacts?q=anna" \
   "items": [
     {
       "uid": "62352c20-a424-403a-8adb-00909bc483b8",
-      "fn": "Anna Kis",
-      "firstname": "Anna",
-      "lastname": "Kis",
-      "emails": [{ "type": "work", "value": "anna@ceg.hu" }],
+      "fn": "Jane Smith",
+      "firstname": "Jane",
+      "lastname": "Smith",
+      "emails": [{ "type": "work", "value": "jane@example.com" }],
       "phones": [],
       "addresses": [],
       "org": "",
@@ -159,8 +159,8 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "anna@ceg.hu",
-    "name": "Anna",
+    "email": "jane@example.com",
+    "name": "Jane",
     "match_condition": "allof"
   }'
 ```
@@ -175,9 +175,9 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "anna@ceg.hu",
+    "email": "jane@example.com",
     "phone": "+36301234567",
-    "name": "Anna",
+    "name": "Jane",
     "match_condition": "anyof"
   }'
 ```
@@ -188,7 +188,7 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
 |--------|-----------|-------|
 | `email` | Exact match | Case-insensitive |
 | `phone` | Contains | Partial number works, e.g. `"1234567"`. Normalized to E.164 before searching — see [Phone number normalization](#phone-number-normalization) |
-| `name` | Contains, word-order-independent | Multi-word queries require all words to appear in the full name, in any order. `"pokémon ol"` matches `"Oláh Pokémon"`. |
+| `name` | Contains, word-order-independent | Multi-word queries require all words to appear in the full name, in any order. `"smith ja"` matches `"Jane Smith"`. |
 
 **Response `200`**
 
@@ -199,14 +199,14 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts/search \
   "matches": [
     {
       "uid": "62352c20-a424-403a-8adb-00909bc483b8",
-      "fn": "Anna Kis",
-      "emails": [{ "type": "work", "value": "anna@ceg.hu" }],
+      "fn": "Jane Smith",
+      "emails": [{ "type": "work", "value": "jane@example.com" }],
       "phones": []
     }
   ],
   "searched_params": {
-    "email": "anna@ceg.hu",
-    "name": "Anna",
+    "email": "jane@example.com",
+    "name": "Jane",
     "match_condition": "allof"
   }
 }
@@ -223,16 +223,16 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "firstname": "Anna",
-    "lastname": "Kis",
+    "firstname": "Jane",
+    "lastname": "Smith",
     "emails": [
-      { "type": "work", "value": "anna@ceg.hu" }
+      { "type": "work", "value": "jane@example.com" }
     ],
     "phones": [
       { "type": "mobile", "value": "+36301234567" }
     ],
-    "org": "ACME Kft.",
-    "note": "VIP ügyfél",
+    "org": "ACME Ltd.",
+    "note": "VIP customer",
     "categories": ["leads", "vip"]
   }'
 ```
@@ -258,9 +258,9 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "firstname": "Anna",
-    "lastname": "Kis",
-    "emails": [{ "type": "work", "value": "anna@ceg.hu" }],
+    "firstname": "Jane",
+    "lastname": "Smith",
+    "emails": [{ "type": "work", "value": "jane@example.com" }],
     "check_duplicates": true
   }'
 ```
@@ -271,7 +271,7 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
 {
   "detail": {
     "error": "duplicate contact",
-    "matched_email": "anna@ceg.hu",
+    "matched_email": "jane@example.com",
     "existing_uid": "62352c20-a424-403a-8adb-00909bc483b8"
   }
 }
@@ -343,8 +343,8 @@ curl -X PUT http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "firstname": "Anna",
-    "lastname": "Nagy"
+    "firstname": "Jane",
+    "lastname": "Doe"
   }'
 ```
 
@@ -363,7 +363,7 @@ fields without resending the entire contact.
 curl -X PATCH http://localhost:8000/api/addressbooks/leads/contacts/62352c20-... \
   -H "X-API-Key: $API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"org": "ACME Kft."}'
+  -d '{"org": "ACME Ltd."}'
 ```
 
 **Field semantics**
@@ -585,9 +585,9 @@ Controls how the full name (`fn`) field is assembled from the individual name pa
 
 | Value | Format | Example |
 |-------|--------|---------|
-| `western` | Prefix Firstname Middlename Lastname Suffix | `Dr. Anna Maria Kis PhD` |
-| `eastern` | Lastname Firstname | `Kis Anna` |
-| `eastern_full` | Prefix Lastname Firstname Suffix | `Dr. Kis Anna PhD` |
+| `western` | Prefix Firstname Middlename Lastname Suffix | `Dr. Jane Marie Smith PhD` |
+| `eastern` | Lastname Firstname | `Smith Jane` |
+| `eastern_full` | Prefix Lastname Firstname Suffix | `Dr. Smith Jane PhD` |
 
 The structured name parts (`firstname`, `lastname`, etc.) are always stored separately
 and are unaffected by this setting. Only the display name (`fn`) changes.
@@ -628,7 +628,7 @@ Valid field names: `firstname`, `lastname`, `middlename`, `prefix`, `suffix`,
 **`firstname`/`lastname` and the built-in name rule.** There's already a
 baked-in rule, always active, that doesn't depend on `REQUIRED_FIELDS` at all:
 every contact needs *either* a first name *or* a last name — a contact with
-only `lastname: "Kis"` and no `firstname` is accepted. This is the bare
+only `lastname: "Smith"` and no `firstname` is accepted. This is the bare
 minimum, always enforced, no configuration needed.
 
 `REQUIRED_FIELDS` can make this stricter, on top of that baseline. If you add
