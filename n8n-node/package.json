@@ -1,0 +1,63 @@
+{
+	"name": "n8n-nodes-carddav-rest",
+	"version": "0.1.0",
+	"description": "n8n community node for CardDAV REST — manage Baïkal contacts from n8n workflows",
+	"license": "MIT",
+	"homepage": "",
+	"keywords": [
+		"n8n-community-node-package",
+		"carddav",
+		"contacts",
+		"baikal",
+		"vcard"
+	],
+	"author": {
+		"name": "",
+		"email": ""
+	},
+	"repository": {
+		"type": "git",
+		"url": ""
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease",
+		"test": "jest"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"credentials": [
+			"dist/credentials/CardDavRestApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/CardDavRest/CardDavRest.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"@types/jest": "^29.5.0",
+		"eslint": "9.29.0",
+		"jest": "^29.5.0",
+		"prettier": "3.8.3",
+		"release-it": "20.2.0",
+		"ts-jest": "^29.1.0",
+		"typescript": "5.9.3"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	},
+	"jest": {
+		"preset": "ts-jest",
+		"testEnvironment": "node",
+		"roots": ["<rootDir>/tests"],
+		"testMatch": ["**/*.test.ts"]
+	}
+}
