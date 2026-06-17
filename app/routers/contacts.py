@@ -15,6 +15,7 @@ from app.models import (
     SearchRequest,
     SearchResponse,
     apply_contact_patch,
+    merge_contacts,
 )
 from app.phone import normalize_phone
 from app.required_fields import missing_required_fields
@@ -226,6 +227,29 @@ async def patch_contact(
     merged_vcf = merge_contact_into_vcard(existing_vcf, existing_contact, name_format)
     await dav.update(book, uid, merged_vcf, etag)
     return {"status": "updated", "uid": uid}
+
+
+@router.post("/{book}/contacts/{uid}/merge/{other_uid}", response_model=ContactOut)
+async def merge_contact(
+    book: str,
+    uid: str,
+    other_uid: str,
+    dav: CardDAVClient = Depends(get_dav),
+    name_format: str = Depends(get_name_format),
+) -> ContactOut:
+    if uid == other_uid:
+        raise HTTPException(status_code=422, detail="uid and other_uid must be different")
+    primary_vcf, primary_etag = await dav.get(book, uid)
+    secondary_vcf, _ = await dav.get(book, other_uid)
+    primary = vcard_to_contact(primary_vcf, name_format)
+    secondary = vcard_to_contact(secondary_vcf, name_format)
+    merged = merge_contacts(primary, secondary)
+    merged_vcf = merge_contact_into_vcard(primary_vcf, merged, name_format)
+    await dav.update(book, uid, merged_vcf, primary_etag)
+    await dav.delete(book, other_uid)
+    contact_out = vcard_to_contact(merged_vcf, name_format)
+    contact_out.uid = uid
+    return contact_out
 
 
 @router.post("/{book}/contacts/{uid}/move/{target_book}")
