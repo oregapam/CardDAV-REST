@@ -375,3 +375,78 @@ describe('execute — contact: delete + search', () => {
     expect(body).toHaveProperty('email', 'a@b.hu');
   });
 });
+
+describe('execute — contact: merge + move + getVcard', () => {
+  const node = new CardDavRest();
+
+  it('merge calls POST .../contacts/{uid}/merge/{otherUid}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'merge',
+      { addressBook: 'default', uid: 'uid-keep', otherUid: 'uid-gone' },
+      { uid: 'uid-keep', firstname: 'Alice' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-keep/merge/uid-gone',
+      }),
+    );
+  });
+
+  it('move calls POST .../contacts/{uid}/move/{targetBook}', async () => {
+    const { ctx, mockHttpRequest } = makeExecFn(
+      'contact',
+      'move',
+      { addressBook: 'default', uid: 'uid-1', targetBook: 'leads' },
+      { status: 'moved' },
+    );
+    await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-1/move/leads',
+      }),
+    );
+  });
+
+  it('getVcard calls GET .../contacts/{uid}/vcard and returns binary', async () => {
+    const vcardText = 'BEGIN:VCARD\nVERSION:3.0\nFN:Alice\nEND:VCARD';
+    const mockHttpRequest = jest.fn().mockResolvedValue(vcardText);
+    const mockPrepareBinaryData = jest
+      .fn()
+      .mockResolvedValue({ data: 'base64...', mimeType: 'text/vcard' });
+
+    const params: Record<string, unknown> = {
+      resource: 'contact',
+      operation: 'getVcard',
+      addressBook: 'default',
+      uid: 'uid-1',
+    };
+    const ctx = {
+      getInputData: () => [{ json: {} }] as INodeExecutionData[],
+      getNodeParameter: (name: string, _i: number) => params[name] ?? '',
+      getCredentials: jest.fn().mockResolvedValue({
+        baseUrl: 'http://localhost:8000',
+        apiKey: 'test-key',
+      }),
+      helpers: {
+        httpRequest: mockHttpRequest,
+        prepareBinaryData: mockPrepareBinaryData,
+      },
+      continueOnFail: () => false,
+      getNode: () => ({ name: 'CardDAV REST', type: 'cardDavRest' }),
+    } as unknown as IExecuteFunctions;
+
+    const result = await node.execute.call(ctx);
+    expect(mockHttpRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        url: 'http://localhost:8000/api/addressbooks/default/contacts/uid-1/vcard',
+      }),
+    );
+    expect(result[0][0].binary).toBeDefined();
+    expect(result[0][0].binary!.data).toBeDefined();
+  });
+});

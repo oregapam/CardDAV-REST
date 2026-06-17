@@ -356,4 +356,25 @@ export const contactFields: INodeProperties[] = [
     ],
     default: 'allof',
   },
+  {
+    displayName: 'Contact to Merge In (UID)',
+    name: 'otherUid',
+    type: 'string',
+    required: true,
+    displayOptions: { show: { resource: ['contact'], operation: ['merge'] } },
+    default: '',
+    description:
+      'UID of the duplicate contact to merge into the primary. The duplicate is deleted after merge.',
+  },
+  {
+    displayName: 'Target Address Book Name or ID',
+    name: 'targetBook',
+    type: 'options',
+    typeOptions: { loadOptionsMethod: 'getAddressBooks' },
+    required: true,
+    displayOptions: { show: { resource: ['contact'], operation: ['move'] } },
+    default: '',
+    description:
+      'Address book to move the contact into. Choose from the list, or specify a name using an expression.',
+  },
 ];

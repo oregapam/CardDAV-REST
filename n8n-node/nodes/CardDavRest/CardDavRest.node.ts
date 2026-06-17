@@ -6,7 +6,6 @@ import {
   INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
-  NodeOperationError,
 } from 'n8n-workflow';
 
 import { apiRequest, loadAddressBooks } from './GenericFunctions';
@@ -273,11 +272,46 @@ export class CardDavRest implements INodeType {
               `/api/addressbooks/${addressBook}/contacts/search`,
               body,
             );
-          } else {
-            throw new NodeOperationError(
-              this.getNode(),
-              `Operation "${operation}" not yet implemented`,
+          } else if (operation === 'merge') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            const otherUid = this.getNodeParameter('otherUid', i) as string;
+            responseData = await apiRequest.call(
+              this,
+              'POST',
+              `/api/addressbooks/${addressBook}/contacts/${uid}/merge/${otherUid}`,
             );
+          } else if (operation === 'move') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            const targetBook = this.getNodeParameter('targetBook', i) as string;
+            responseData = await apiRequest.call(
+              this,
+              'POST',
+              `/api/addressbooks/${addressBook}/contacts/${uid}/move/${targetBook}`,
+            );
+          } else if (operation === 'getVcard') {
+            const uid = this.getNodeParameter('uid', i) as string;
+            const credentials = await this.getCredentials<{
+              baseUrl: string;
+              apiKey: string;
+            }>('cardDavRestApi');
+            const vcardContent = (await this.helpers.httpRequest({
+              method: 'GET',
+              url: `${credentials.baseUrl.replace(/\/$/, '')}/api/addressbooks/${addressBook}/contacts/${uid}/vcard`,
+              headers: { 'X-API-Key': credentials.apiKey },
+            })) as string;
+
+            const binaryData = await this.helpers.prepareBinaryData(
+              Buffer.from(vcardContent, 'utf-8'),
+              `${uid}.vcf`,
+              'text/vcard; charset=utf-8',
+            );
+
+            returnData.push({
+              json: { uid, filename: `${uid}.vcf` },
+              binary: { data: binaryData },
+              pairedItem: { item: i },
+            });
+            continue;
           }
         }
       } catch (error) {
