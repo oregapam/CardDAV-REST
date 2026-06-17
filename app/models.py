@@ -163,3 +163,18 @@ class SearchResponse(BaseModel):
     match_count: int
     matches: list[SearchMatch]
     searched_params: dict
+
+
+class AddressbookStats(BaseModel):
+    name: str
+    displayname: str
+    contact_count: int
+    last_modified: str | None
+    oldest_modified: str | None
+    total_size_bytes: int
+
+
+class StatsResponse(BaseModel):
+    total_contacts: int
+    total_size_bytes: int
+    addressbooks: list[AddressbookStats]

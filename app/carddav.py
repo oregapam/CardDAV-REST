@@ -1,5 +1,6 @@
 import logging
 import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 from urllib.parse import urlparse
 
 import httpx
@@ -89,6 +90,35 @@ def parse_addressbooks(xml_text: str, principal_url: str) -> list[dict]:
         displayname = response.findtext(".//d:displayname", None, NS) or name
         results.append({"name": name, "displayname": displayname})
     return results
+
+
+def parse_stat_propfind(xml_text: str) -> tuple[int, str | None, str | None, int]:
+    root = ET.fromstring(xml_text)
+    contact_count = 0
+    total_size = 0
+    timestamps: list[str] = []
+
+    for response in root.findall("d:response", NS):
+        href = response.findtext("d:href", "", NS)
+        if href.endswith("/"):
+            continue
+        contact_count += 1
+        lm = response.findtext(".//d:getlastmodified", None, NS)
+        if lm:
+            timestamps.append(lm)
+        cl = response.findtext(".//d:getcontentlength", None, NS)
+        if cl:
+            total_size += int(cl)
+
+    if not timestamps:
+        return contact_count, None, None, total_size
+
+    def to_iso(http_date: str) -> str:
+        return parsedate_to_datetime(http_date).isoformat()
+
+    last_mod = to_iso(max(timestamps, key=lambda d: parsedate_to_datetime(d)))
+    oldest_mod = to_iso(min(timestamps, key=lambda d: parsedate_to_datetime(d)))
+    return contact_count, last_mod, oldest_mod, total_size
 
 
 logger = logging.getLogger("carddav")
@@ -222,3 +252,18 @@ class CardDAVClient:
 
     async def delete(self, book: str, uid: str) -> None:
         await self._request("DELETE", self._contact_url(book, uid))
+
+    async def stat_book(self, book: str) -> tuple[int, str | None, str | None, int]:
+        body = (
+            '<?xml version="1.0" encoding="utf-8"?>'
+            '<d:propfind xmlns:d="DAV:">'
+            "<d:prop><d:getetag/><d:getlastmodified/><d:getcontentlength/></d:prop>"
+            "</d:propfind>"
+        )
+        resp = await self._request(
+            "PROPFIND",
+            self._book_url(book),
+            content=body.encode("utf-8"),
+            headers={"Depth": "1", "Content-Type": "application/xml; charset=utf-8"},
+        )
+        return parse_stat_propfind(resp.text)
