@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-carddav-rest",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "n8n community node for CardDAV REST — manage Baïkal contacts from n8n workflows",
 	"license": "MIT",
 	"homepage": "https://github.com/oregapam/CardDAV-REST",
