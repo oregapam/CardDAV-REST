@@ -166,7 +166,7 @@ npm publish --access public
 
 ## Related
 
-- [CardDAV REST adapter](../README.md) — the FastAPI-based Baïkal adapter this node calls
+- [CardDAV REST adapter](https://github.com/oregapam/CardDAV-REST) — the FastAPI-based Baïkal adapter this node calls
 
 ## License
 
