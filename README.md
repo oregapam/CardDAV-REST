@@ -32,6 +32,33 @@ Interactive API docs (Swagger UI): **http://localhost:8000/docs**
 
 ---
 
+## Publishing a new image to GHCR
+
+The adapter image is published to [GitHub Container Registry](https://ghcr.io/oregapam/carddav-rest).
+
+**One-time setup — generate a Personal Access Token:**
+
+GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token → scopes: `write:packages`, `read:packages`
+
+```bash
+echo "YOUR_TOKEN" | docker login ghcr.io -u oregapam --password-stdin
+```
+
+**Build and push:**
+
+```bash
+VERSION=0.1.2   # match the release version
+docker build -t ghcr.io/oregapam/carddav-rest:${VERSION} -t ghcr.io/oregapam/carddav-rest:latest .
+docker push ghcr.io/oregapam/carddav-rest:${VERSION}
+docker push ghcr.io/oregapam/carddav-rest:latest
+```
+
+**Make the package public** (first time only):
+
+GitHub → Profile → Packages → carddav-rest → Package settings → Change visibility → Public
+
+---
+
 ## Authentication
 
 Every `/api/*` endpoint requires the `X-API-Key` header. `/health`, `/docs`, and `/redoc` are public.
