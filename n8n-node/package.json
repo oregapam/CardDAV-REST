@@ -3,21 +3,22 @@
 	"version": "0.1.0",
 	"description": "n8n community node for CardDAV REST — manage Baïkal contacts from n8n workflows",
 	"license": "MIT",
-	"homepage": "",
+	"homepage": "https://github.com/oregapam/CardDAV-REST",
 	"keywords": [
 		"n8n-community-node-package",
 		"carddav",
 		"contacts",
 		"baikal",
-		"vcard"
+		"vcard",
+		"n8n"
 	],
 	"author": {
-		"name": "",
-		"email": ""
+		"name": "Mark Kokeny",
+		"email": "mark.kokeny93@gmail.com"
 	},
 	"repository": {
 		"type": "git",
-		"url": ""
+		"url": "https://github.com/oregapam/CardDAV-REST"
 	},
 	"scripts": {
 		"build": "n8n-node build",
