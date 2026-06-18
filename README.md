@@ -8,8 +8,6 @@ Multiple address books are supported — each book is a separate namespace in th
 URL, so you can keep leads, customers, and personal contacts isolated while
 managing them all through one adapter instance.
 
-Design spec: `docs/superpowers/specs/2026-06-11-carddav-rest-adapter-design.md`
-
 ---
 
 ## Running
@@ -257,8 +255,8 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
 #### `check_duplicates: true` — duplicate prevention
 
 When set to `true`, the adapter searches for an existing contact with the same email
-address **before** creating. If a match is found, it returns `409 Conflict` instead
-of creating a duplicate.
+address **or phone number** before creating. If a match is found, it returns `409 Conflict`
+instead of creating a duplicate.
 
 ```bash
 curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
@@ -272,13 +270,25 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
   }'
 ```
 
-**Response `409`** (if a contact with that email already exists)
+**Response `409`** (if a contact with that email or phone already exists)
 
 ```json
 {
   "detail": {
     "error": "duplicate contact",
     "matched_email": "jane@example.com",
+    "existing_uid": "62352c20-a424-403a-8adb-00909bc483b8"
+  }
+}
+```
+
+Or, when matched by phone:
+
+```json
+{
+  "detail": {
+    "error": "duplicate contact",
+    "matched_phone": "+36301234567",
     "existing_uid": "62352c20-a424-403a-8adb-00909bc483b8"
   }
 }
@@ -303,7 +313,7 @@ curl -X POST http://localhost:8000/api/addressbooks/leads/contacts \
 | `note` | string | Free-text note |
 | `photo` | string | URL or base64-encoded image |
 | `categories` | `[string]` | Tags / groups |
-| `check_duplicates` | boolean | Default `false`; checks by email before creating |
+| `check_duplicates` | boolean | Default `false`; checks by email and phone before creating |
 
 ---
 

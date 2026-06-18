@@ -1,6 +1,6 @@
 # n8n-nodes-carddav-rest
 
-n8n community node for the [CardDAV REST](https://github.com/mark/CardDAV-REST) adapter. Manage contacts stored in Baïkal from n8n workflows — no hand-crafted HTTP Request nodes required.
+n8n community node for the [CardDAV REST](https://github.com/oregapam/CardDAV-REST) adapter. Manage contacts stored in Baïkal from n8n workflows — no hand-crafted HTTP Request nodes required.
 
 ## Installation
 
@@ -150,7 +150,7 @@ Add fields to the **Fields to Update** collection. Fields not listed remain unto
 ```bash
 cd n8n-node
 npm install
-npm test          # Run Jest test suite (31 tests)
+npm test          # Run Jest test suite (34 tests)
 npm run build     # Compile TypeScript to dist/
 npm run dev       # Start n8n with hot reload
 npm run lint      # Run ESLint
@@ -159,17 +159,9 @@ npm run lint:fix  # Auto-fix linting issues
 
 ## Publishing to npm
 
-Before publishing, fill in the following fields in `package.json`:
-
-- `author.name` / `author.email`
-- `homepage`
-- `repository.url`
-
-Then:
-
 ```bash
 npm run build
-npm publish
+npm publish --access public
 ```
 
 ## Related
